@@ -11,15 +11,10 @@ from config_recommender import (
 def main():
     """Run basic GPU recommendation example."""
     
-    # Define a model
+    # Define a model using HuggingFace identifier
+    # Model details are automatically fetched from HuggingFace
     model = ModelArchitecture(
-        name="llama-2-7b",
-        num_parameters=7.0,  # in billions
-        num_layers=32,
-        hidden_size=4096,
-        num_attention_heads=32,
-        vocab_size=32000,
-        max_sequence_length=4096,
+        name="Qwen/Qwen2.5-7B",  # HuggingFace model identifier
     )
     
     # Define available GPUs

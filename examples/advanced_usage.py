@@ -12,36 +12,12 @@ from config_recommender import (
 def main():
     """Run advanced GPU recommendation example."""
     
-    # Define multiple models
+    # Define multiple models using HuggingFace identifiers
+    # Model details are automatically fetched from HuggingFace
     models = [
-        ModelArchitecture(
-            name="llama-2-7b",
-            num_parameters=7.0,
-            num_layers=32,
-            hidden_size=4096,
-            num_attention_heads=32,
-            vocab_size=32000,
-            max_sequence_length=4096,
-        ),
-        ModelArchitecture(
-            name="mistral-7b",
-            num_parameters=7.3,
-            num_layers=32,
-            hidden_size=4096,
-            num_attention_heads=32,
-            num_kv_heads=8,  # Grouped Query Attention
-            vocab_size=32000,
-            max_sequence_length=8192,
-        ),
-        ModelArchitecture(
-            name="llama-2-13b",
-            num_parameters=13.0,
-            num_layers=40,
-            hidden_size=5120,
-            num_attention_heads=40,
-            vocab_size=32000,
-            max_sequence_length=4096,
-        ),
+        ModelArchitecture(name="Qwen/Qwen2.5-7B"),
+        ModelArchitecture(name="mistralai/Mixtral-8x7B-v0.1"),
+        ModelArchitecture(name="ibm-granite/granite-3.0-8b-base"),
     ]
     
     # Define GPU fleet

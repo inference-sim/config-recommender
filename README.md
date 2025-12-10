@@ -18,6 +18,26 @@ Config Recommender is a Python library that recommends optimal GPU configuration
 
 ## Installation
 
+### Setting up a Virtual Environment
+
+It's recommended to use a virtual environment to avoid dependency conflicts:
+
+```bash
+# Create a virtual environment
+python -m venv venv
+
+# Activate the virtual environment
+# On Linux/macOS:
+source venv/bin/activate
+# On Windows:
+# venv\Scripts\activate
+
+# Upgrade pip
+pip install --upgrade pip
+```
+
+### Installing the Package
+
 ```bash
 # Install from source
 pip install -e .
@@ -37,15 +57,10 @@ from config_recommender import (
     GPURecommender,
 )
 
-# Define a model
+# Define a model using HuggingFace identifier
+# No need to manually specify model parameters - they're fetched automatically
 model = ModelArchitecture(
-    name="llama-2-7b",
-    num_parameters=7.0,  # in billions
-    num_layers=32,
-    hidden_size=4096,
-    num_attention_heads=32,
-    vocab_size=32000,
-    max_sequence_length=4096,
+    name="mistralai/Mixtral-8x7B-v0.1",  # HuggingFace model identifier
 )
 
 # Define available GPUs
@@ -99,13 +114,22 @@ config-recommender --models examples/models.json --gpus examples/gpus.json \
 
 ## How It Works
 
+### Model Information Fetching
+
+The recommendation engine automatically fetches model architecture details from HuggingFace:
+
+- Model parameters are retrieved using the `config_explorer` library from [llm-d-benchmark](https://github.com/llm-d/llm-d-benchmark)
+- No need to manually specify model architecture parameters
+- Simply provide the HuggingFace model identifier (e.g., `"mistralai/Mixtral-8x7B-v0.1"`)
+- For gated models, set the `HF_TOKEN` environment variable
+
 ### Synthetic Benchmark Estimation
 
 The recommendation engine estimates performance using:
 
-1. **Memory Requirements**:
-   - **Weights**: `num_parameters × precision_bytes`
-   - **KV Cache**: `2 × num_layers × num_kv_heads × head_dim × seq_len × batch_size × precision`
+1. **Memory Requirements** (via config_explorer):
+   - **Weights**: Accurate model size from HuggingFace safetensors
+   - **KV Cache**: Precise calculation accounting for attention type (MHA/GQA/MQA/MLA)
    - **Activations**: Estimated based on batch size, sequence length, and hidden dimensions
 
 2. **Performance Estimation**:
@@ -133,19 +157,25 @@ config_recommender/
 
 ### Model Architecture JSON
 
+Models are now specified using HuggingFace identifiers:
+
 ```json
 [
   {
-    "name": "llama-2-7b",
-    "num_parameters": 7.0,
-    "num_layers": 32,
-    "hidden_size": 4096,
-    "num_attention_heads": 32,
-    "vocab_size": 32000,
-    "max_sequence_length": 4096,
-    "num_kv_heads": 32
+    "name": "mistralai/Mixtral-8x7B-v0.1"
+  },
+  {
+    "name": "Qwen/Qwen2.5-7B"
+  },
+  {
+    "name": "ibm-granite/granite-3.0-8b-base"
   }
 ]
+```
+
+For gated models like Llama, set the `HF_TOKEN` environment variable:
+```bash
+export HF_TOKEN=your_huggingface_token
 ```
 
 ### GPU Specification JSON
@@ -169,7 +199,7 @@ config_recommender/
 {
   "recommendations": [
     {
-      "model_name": "llama-2-7b",
+      "model_name": "mistralai/Mixtral-8x7B-v0.1",
       "recommended_gpu": "NVIDIA H100 80GB",
       "performance": {
         "tokens_per_second": 1234.56,
@@ -178,7 +208,7 @@ config_recommender/
         "fits_in_memory": true,
         "compute_bound": true
       },
-      "reasoning": "Selected NVIDIA H100 80GB for llama-2-7b. Throughput: 1234.56 tokens/sec...",
+      "reasoning": "Selected NVIDIA H100 80GB for mistralai/Mixtral-8x7B-v0.1. Throughput: 1234.56 tokens/sec...",
       "all_compatible_gpus": [...]
     }
   ]

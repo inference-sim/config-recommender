@@ -13,9 +13,9 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     packages=find_packages(),
-    python_requires=">=3.8",
+    python_requires=">=3.11",
     install_requires=[
-        # No external dependencies for core functionality
+        "config_explorer @ git+https://github.com/llm-d/llm-d-benchmark.git#subdirectory=config_explorer",
     ],
     extras_require={
         "dev": [

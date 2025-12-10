@@ -75,17 +75,21 @@ class SyntheticBenchmarkEstimator:
     def estimate_memory_weights(self, model: ModelArchitecture) -> float:
         """Estimate memory required for model weights in GB.
         
+        Uses config_explorer library for HF models, or falls back to calculation.
+        
         Args:
             model: Model architecture
             
         Returns:
             Memory required in GB
         """
-        # num_parameters is in billions
-        params_in_billions = model.num_parameters
+        # Use config_explorer for HF models
+        if model._use_hf:
+            return model.get_model_memory_gb()
+        # Fallback for manual mode
+        params_in_billions = model.get_num_parameters()
         bytes_per_param = self.precision_bytes
-        memory_gb = params_in_billions * bytes_per_param
-        return memory_gb
+        return params_in_billions * bytes_per_param
     
     def estimate_memory_kv_cache(
         self, 
@@ -94,8 +98,7 @@ class SyntheticBenchmarkEstimator:
     ) -> float:
         """Estimate memory required for KV cache in GB.
         
-        The KV cache stores keys and values for each layer and each token.
-        Size = 2 (K and V) * num_layers * num_kv_heads * head_dim * seq_len * batch_size * precision
+        Uses config_explorer library for HF models, or falls back to calculation.
         
         Args:
             model: Model architecture
@@ -104,18 +107,11 @@ class SyntheticBenchmarkEstimator:
         Returns:
             Memory required in GB
         """
-        head_dim = model.hidden_size // model.num_attention_heads
-        num_kv_heads = model.num_kv_heads if model.num_kv_heads else model.num_attention_heads
-        
-        # 2 for K and V
-        kv_cache_elements = (
-            2 * model.num_layers * num_kv_heads * head_dim * 
-            sequence_length * self.batch_size
-        )
-        
-        kv_cache_bytes = kv_cache_elements * self.precision_bytes
-        kv_cache_gb = kv_cache_bytes / (1024 ** 3)
-        return kv_cache_gb
+        # Use config_explorer for HF models
+        if model._use_hf:
+            return model.get_kv_cache_gb(sequence_length, self.batch_size)
+        # Fallback for manual mode
+        return model.get_kv_cache_gb(sequence_length, self.batch_size)
     
     def estimate_memory_activation(self, model: ModelArchitecture) -> float:
         """Estimate memory required for activations in GB.
@@ -129,15 +125,29 @@ class SyntheticBenchmarkEstimator:
         Returns:
             Memory required in GB
         """
-        # Rough estimate: batch_size * seq_len * hidden_size * num_layers * ACTIVATION_MULTIPLIER
-        # ACTIVATION_MULTIPLIER accounts for FFN intermediate activations
-        activation_elements = (
-            self.batch_size * model.max_sequence_length * 
-            model.hidden_size * model.num_layers * ACTIVATION_MULTIPLIER
-        )
-        activation_bytes = activation_elements * self.precision_bytes
-        activation_gb = activation_bytes / (1024 ** 3)
-        return activation_gb
+        # Get KV cache detail for more accurate activation estimation (HF mode)
+        if model._use_hf:
+            kv_detail = model.get_kv_cache_detail(model.get_max_sequence_length(), self.batch_size)
+            if kv_detail:
+                activation_elements = (
+                    self.batch_size * model.get_max_sequence_length() * 
+                    kv_detail.hidden_size * kv_detail.num_hidden_layers * ACTIVATION_MULTIPLIER
+                )
+                activation_bytes = activation_elements * kv_detail.precision_in_bytes
+                activation_gb = activation_bytes / (1024 ** 3)
+                return activation_gb
+        
+        # Fallback for manual mode
+        if model.hidden_size and model.num_layers:
+            activation_elements = (
+                self.batch_size * model.get_max_sequence_length() * 
+                model.hidden_size * model.num_layers * ACTIVATION_MULTIPLIER
+            )
+            activation_bytes = activation_elements * self.precision_bytes
+            activation_gb = activation_bytes / (1024 ** 3)
+            return activation_gb
+        
+        return 0.0
     
     def estimate_total_memory(
         self, 
@@ -148,13 +158,13 @@ class SyntheticBenchmarkEstimator:
         
         Args:
             model: Model architecture
-            sequence_length: Sequence length (defaults to model.max_sequence_length)
+            sequence_length: Sequence length (defaults to model's max_sequence_length)
             
         Returns:
             Dictionary with memory breakdown
         """
         if sequence_length is None:
-            sequence_length = model.max_sequence_length
+            sequence_length = model.get_max_sequence_length()
         
         weights_gb = self.estimate_memory_weights(model)
         kv_cache_gb = self.estimate_memory_kv_cache(model, sequence_length)
@@ -185,7 +195,7 @@ class SyntheticBenchmarkEstimator:
         """
         # Simplified: ~FLOPS_PER_PARAM FLOPs per parameter for forward pass
         # num_parameters is in billions
-        flops_per_token = FLOPS_PER_PARAM * model.num_parameters * 1e9
+        flops_per_token = FLOPS_PER_PARAM * model.get_num_parameters() * 1e9
         return flops_per_token
     
     def estimate_performance(
@@ -199,13 +209,13 @@ class SyntheticBenchmarkEstimator:
         Args:
             model: Model architecture
             gpu: GPU specification
-            sequence_length: Sequence length (defaults to model.max_sequence_length)
+            sequence_length: Sequence length (defaults to model's max_sequence_length)
             
         Returns:
             PerformanceEstimate object
         """
         if sequence_length is None:
-            sequence_length = model.max_sequence_length
+            sequence_length = model.get_max_sequence_length()
         
         # Memory estimates
         memory_breakdown = self.estimate_total_memory(model, sequence_length)
@@ -227,7 +237,7 @@ class SyntheticBenchmarkEstimator:
         # Note: This is a conservative estimate. In practice, inference engines
         # cache frequently accessed weights, reducing memory bandwidth requirements.
         # MEMORY_READ_FACTOR can be tuned based on caching effectiveness.
-        bytes_per_token = model.num_parameters * 1e9 * self.precision_bytes * MEMORY_READ_FACTOR
+        bytes_per_token = model.get_num_parameters() * 1e9 * self.precision_bytes * MEMORY_READ_FACTOR
         memory_tokens_per_second = (gpu.memory_bandwidth_gb_s * 1e9) / bytes_per_token
         
         # Actual throughput is limited by the bottleneck

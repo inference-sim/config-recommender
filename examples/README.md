@@ -78,33 +78,34 @@ python -m config_recommender.cli \
 
 ### Model Architecture
 
-The `models.json` file contains an array of model specifications:
+The `models.json` file contains an array of HuggingFace model identifiers.
+Model details are automatically fetched from HuggingFace:
 
 ```json
 [
   {
-    "name": "llama-2-7b",
-    "num_parameters": 7.0,
-    "num_layers": 32,
-    "hidden_size": 4096,
-    "num_attention_heads": 32,
-    "vocab_size": 32000,
-    "max_sequence_length": 4096
+    "name": "Qwen/Qwen2.5-7B"
+  },
+  {
+    "name": "mistralai/Mixtral-8x7B-v0.1"
+  },
+  {
+    "name": "ibm-granite/granite-3.0-8b-base"
   }
 ]
 ```
 
 Required fields:
-- `name`: Model identifier
-- `num_parameters`: Number of parameters in billions
-- `num_layers`: Number of transformer layers
-- `hidden_size`: Hidden dimension size
-- `num_attention_heads`: Number of attention heads
-- `vocab_size`: Vocabulary size
+- `name`: HuggingFace model identifier (e.g., "Qwen/Qwen2.5-7B")
 
 Optional fields:
-- `max_sequence_length`: Maximum sequence length (default: 2048)
-- `num_kv_heads`: Number of KV heads for GQA/MQA (default: same as num_attention_heads)
+- `hf_token`: HuggingFace token for gated models (defaults to `HF_TOKEN` environment variable)
+
+**Note**: The examples use non-gated models that don't require authentication. For gated models like Llama, set the `HF_TOKEN` environment variable:
+
+```bash
+export HF_TOKEN=your_huggingface_token
+```
 
 ### GPU Specification
 
@@ -141,7 +142,7 @@ The recommendation engine outputs JSON with the following structure:
 {
   "recommendations": [
     {
-      "model_name": "llama-2-7b",
+      "model_name": "Qwen/Qwen2.5-7B",
       "recommended_gpu": "NVIDIA H100 80GB",
       "performance": {
         "tokens_per_second": 239.29,
@@ -170,14 +171,9 @@ Example:
 ```python
 from config_recommender import ModelArchitecture, GPUSpec, GPURecommender
 
-# Define your model
+# Define your model using HuggingFace identifier
 my_model = ModelArchitecture(
-    name="my-custom-model",
-    num_parameters=13.0,
-    num_layers=40,
-    hidden_size=5120,
-    num_attention_heads=40,
-    vocab_size=50000,
+    name="your-org/your-model-name",  # HuggingFace model identifier
 )
 
 # Define available GPUs

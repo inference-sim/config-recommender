@@ -79,13 +79,13 @@ class GPURecommender:
         Args:
             model: Model architecture
             available_gpus: List of available GPU specs
-            sequence_length: Sequence length (defaults to model.max_sequence_length)
+            sequence_length: Sequence length (defaults to model's max_sequence_length)
             
         Returns:
             RecommendationResult with the recommendation and reasoning
         """
         if sequence_length is None:
-            sequence_length = model.max_sequence_length
+            sequence_length = model.get_max_sequence_length()
         
         # Evaluate all GPUs
         gpu_evaluations = []
