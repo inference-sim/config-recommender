@@ -1,0 +1,2 @@
+# Core dependencies
+llm-optimizer>=0.1.0
