@@ -20,6 +20,21 @@ def main():
         ModelArchitecture(name="ibm-granite/granite-3.0-8b-base"),
     ]
     
+    # Example: Override parameters for a gated model when you know the specs
+    # but don't have a HuggingFace token
+    # This is useful for models like Llama where you have the architecture info
+    gated_model = ModelArchitecture(
+        name="meta-llama/Llama-2-7b-hf",  # This would normally require HF_TOKEN
+        # Provide manual overrides so it works without token
+        num_parameters=7.0,
+        num_layers=32,
+        hidden_size=4096,
+        num_attention_heads=32,
+        vocab_size=32000,
+        max_sequence_length=4096,
+    )
+    models.append(gated_model)
+    
     # Define GPU fleet
     gpus = [
         GPUSpec(

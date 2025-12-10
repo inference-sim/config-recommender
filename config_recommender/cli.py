@@ -99,7 +99,8 @@ Examples:
         '--compute-efficiency',
         type=float,
         default=0.5,
-        help='Compute utilization efficiency factor (default: 0.5)'
+        help='Fraction of peak GPU compute actually achieved during inference (0.0-1.0). '
+             'Accounts for real-world utilization vs theoretical peak. Default: 0.5 (50%%)'
     )
     
     parser.add_argument(

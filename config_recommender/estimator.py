@@ -75,7 +75,7 @@ class SyntheticBenchmarkEstimator:
     def estimate_memory_weights(self, model: ModelArchitecture) -> float:
         """Estimate memory required for model weights in GB.
         
-        Uses config_explorer library for HF models, or falls back to calculation.
+        Uses config_explorer library for accurate model memory requirements.
         
         Args:
             model: Model architecture
@@ -83,13 +83,7 @@ class SyntheticBenchmarkEstimator:
         Returns:
             Memory required in GB
         """
-        # Use config_explorer for HF models
-        if model._use_hf:
-            return model.get_model_memory_gb()
-        # Fallback for manual mode
-        params_in_billions = model.get_num_parameters()
-        bytes_per_param = self.precision_bytes
-        return params_in_billions * bytes_per_param
+        return model.get_model_memory_gb()
     
     def estimate_memory_kv_cache(
         self, 
@@ -122,19 +116,18 @@ class SyntheticBenchmarkEstimator:
         Returns:
             Memory required in GB
         """
-        # Get KV cache detail for more accurate activation estimation (HF mode)
-        if model._use_hf:
-            kv_detail = model.get_kv_cache_detail(model.get_max_sequence_length(), self.batch_size)
-            if kv_detail:
-                activation_elements = (
-                    self.batch_size * model.get_max_sequence_length() * 
-                    kv_detail.hidden_size * kv_detail.num_hidden_layers * ACTIVATION_MULTIPLIER
-                )
-                activation_bytes = activation_elements * kv_detail.precision_in_bytes
-                activation_gb = activation_bytes / (1024 ** 3)
-                return activation_gb
+        # Try to get accurate KV cache detail from HF
+        kv_detail = model.get_kv_cache_detail(model.get_max_sequence_length(), self.batch_size)
+        if kv_detail:
+            activation_elements = (
+                self.batch_size * model.get_max_sequence_length() * 
+                kv_detail.hidden_size * kv_detail.num_hidden_layers * ACTIVATION_MULTIPLIER
+            )
+            activation_bytes = activation_elements * kv_detail.precision_in_bytes
+            activation_gb = activation_bytes / (1024 ** 3)
+            return activation_gb
         
-        # Fallback for manual mode
+        # Fallback to manual calculation
         if model.hidden_size and model.num_layers:
             activation_elements = (
                 self.batch_size * model.get_max_sequence_length() * 
