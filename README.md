@@ -20,7 +20,13 @@ GPU recommendation engine for model inference workloads. This tool uses BentoML'
 pip install -r requirements.txt
 ```
 
-This will install `llm-optimizer` which is the core dependency.
+This will install `llm-optimizer` from the BentoML GitHub repository. Note that `llm-optimizer` is not available on PyPI and must be installed directly from source.
+
+Alternatively, you can install llm-optimizer manually:
+
+```bash
+pip install -e git+https://github.com/bentoml/llm-optimizer.git#egg=llm-optimizer
+```
 
 ## Usage
 

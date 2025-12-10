@@ -160,11 +160,17 @@ Tests include:
 
 ## Dependencies
 
-- `llm-optimizer>=0.1.0` (BentoML's LLM optimizer tool)
+- `llm-optimizer` (BentoML's LLM optimizer tool)
+  - **Note**: Not available on PyPI - must be installed from GitHub
 
 Install with:
 ```bash
 pip install -r requirements.txt
+```
+
+Or install llm-optimizer manually:
+```bash
+pip install -e git+https://github.com/bentoml/llm-optimizer.git#egg=llm-optimizer
 ```
 
 ## Notes
