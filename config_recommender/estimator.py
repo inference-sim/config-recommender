@@ -107,10 +107,7 @@ class SyntheticBenchmarkEstimator:
         Returns:
             Memory required in GB
         """
-        # Use config_explorer for HF models
-        if model._use_hf:
-            return model.get_kv_cache_gb(sequence_length, self.batch_size)
-        # Fallback for manual mode
+        # ModelArchitecture handles both HF and manual modes internally
         return model.get_kv_cache_gb(sequence_length, self.batch_size)
     
     def estimate_memory_activation(self, model: ModelArchitecture) -> float:

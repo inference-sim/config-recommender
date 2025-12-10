@@ -1,8 +1,17 @@
 """Data models for GPU specs and model architectures."""
 
+from __future__ import annotations
 import os
-from dataclasses import dataclass
-from typing import Optional
+from dataclasses import dataclass, field
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    try:
+        from config_explorer.capacity_planner import KVCacheDetail
+        from huggingface_hub import ModelInfo
+        from transformers import AutoConfig
+    except ImportError:
+        pass
 
 try:
     from config_explorer.capacity_planner import (
@@ -41,19 +50,13 @@ class ModelArchitecture:
         hidden_size: Hidden dimension size
         num_attention_heads: Number of attention heads
         vocab_size: Vocabulary size
-        max_sequence_length: Maximum sequence length
+        max_sequence_length: Maximum sequence length (default: 2048)
         num_kv_heads: Number of key-value heads (for GQA/MQA), defaults to num_attention_heads
-        
-        # Internal cached properties
-        _model_info: Cached HuggingFace model info
-        _model_config: Cached HuggingFace model config
-        _kv_cache_detail: Cached KV cache detail object
-        _use_hf: Whether using HuggingFace auto-fetch
     """
     name: str
     hf_token: Optional[str] = None
     
-    # Manual specification fields (optional)
+    # Manual specification fields (optional, for offline/testing)
     num_parameters: Optional[float] = None  # in billions
     num_layers: Optional[int] = None
     hidden_size: Optional[int] = None
@@ -62,11 +65,11 @@ class ModelArchitecture:
     max_sequence_length: int = 2048
     num_kv_heads: Optional[int] = None
     
-    # Cached properties from HuggingFace
-    _model_info: Optional['ModelInfo'] = None
-    _model_config: Optional['AutoConfig'] = None
-    _kv_cache_detail: Optional['KVCacheDetail'] = None
-    _use_hf: bool = False
+    # Private fields - not part of constructor, initialized in __post_init__
+    _model_info: Optional[ModelInfo] = field(default=None, init=False, repr=False)
+    _model_config: Optional[AutoConfig] = field(default=None, init=False, repr=False)
+    _kv_cache_detail: Optional[KVCacheDetail] = field(default=None, init=False, repr=False)
+    _use_hf: bool = field(default=False, init=False, repr=False)
     
     def __post_init__(self):
         """Initialize model info from HuggingFace or validate manual spec."""
@@ -77,7 +80,15 @@ class ModelArchitecture:
         # Determine mode: auto-fetch or manual
         # If any manual field is provided, use manual mode
         if self.num_parameters is not None:
-            # Manual mode - validate that we have minimum required fields
+            # Manual mode - validate required fields
+            required_fields = ['num_layers', 'hidden_size', 'num_attention_heads', 'vocab_size']
+            missing = [f for f in required_fields if getattr(self, f) is None]
+            if missing:
+                raise ValueError(
+                    f"Manual model specification requires all of: num_parameters, num_layers, "
+                    f"hidden_size, num_attention_heads, vocab_size. Missing: {', '.join(missing)}"
+                )
+            
             if self.num_kv_heads is None:
                 self.num_kv_heads = self.num_attention_heads
             self._use_hf = False
@@ -86,7 +97,8 @@ class ModelArchitecture:
             if not HAS_CONFIG_EXPLORER:
                 raise ValueError(
                     f"config_explorer is not installed. Either install it or provide manual "
-                    f"model specifications (num_parameters, num_layers, etc.)"
+                    f"model specifications (num_parameters, num_layers, hidden_size, "
+                    f"num_attention_heads, vocab_size)"
                 )
             
             try:
@@ -96,7 +108,8 @@ class ModelArchitecture:
             except Exception as e:
                 raise ValueError(
                     f"Failed to fetch model info for '{self.name}': {e}\n"
-                    f"If this is expected (offline mode), provide manual model specifications."
+                    f"If this is expected (offline mode), provide manual model specifications "
+                    f"(num_parameters, num_layers, hidden_size, num_attention_heads, vocab_size)."
                 )
     
     def get_num_parameters(self) -> float:
@@ -122,7 +135,15 @@ class ModelArchitecture:
         return 0.0
     
     def get_kv_cache_gb(self, context_len: int, batch_size: int = 1) -> float:
-        """Get KV cache memory requirement in GB."""
+        """Get KV cache memory requirement in GB.
+        
+        Args:
+            context_len: Context/sequence length in tokens
+            batch_size: Batch size (default: 1)
+            
+        Returns:
+            KV cache memory in GB
+        """
         if self._use_hf and self._model_info is not None and self._model_config is not None:
             return kv_cache_req(self._model_info, self._model_config, context_len, batch_size)
         # Fallback: manual calculation
@@ -138,8 +159,18 @@ class ModelArchitecture:
             return kv_cache_bytes / (1024 ** 3)
         return 0.0
     
-    def get_kv_cache_detail(self, context_len: int = 1, batch_size: int = 1) -> Optional['KVCacheDetail']:
-        """Get detailed KV cache information."""
+    def get_kv_cache_detail(self, context_len: int, batch_size: int = 1) -> Optional[KVCacheDetail]:
+        """Get detailed KV cache information.
+        
+        Only available in HuggingFace auto-fetch mode.
+        
+        Args:
+            context_len: Context/sequence length in tokens
+            batch_size: Batch size (default: 1)
+            
+        Returns:
+            KVCacheDetail object or None if in manual mode
+        """
         if not self._use_hf:
             return None  # Not available in manual mode
         
