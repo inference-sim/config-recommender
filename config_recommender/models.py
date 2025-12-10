@@ -1,7 +1,7 @@
 """Data models for GPU recommendations."""
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, List
 
 
 @dataclass
@@ -87,7 +87,7 @@ class GPURecommendation:
     """Recommendation for best GPU for a model."""
     model: str
     recommended_gpu: str
-    all_analyses: list[PerformanceAnalysis]
+    all_analyses: List[PerformanceAnalysis]
     
     def get_best_analysis(self) -> Optional[PerformanceAnalysis]:
         """Get the performance analysis for the recommended GPU."""
