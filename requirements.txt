@@ -1,0 +1,4 @@
+# Core dependencies
+# llm-optimizer is not available on PyPI and must be installed from GitHub:
+# pip install -e git+https://github.com/bentoml/llm-optimizer.git#egg=llm-optimizer
+git+https://github.com/bentoml/llm-optimizer.git
