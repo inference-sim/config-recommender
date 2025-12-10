@@ -140,7 +140,7 @@ def test_recommend_gpu_with_latency_bound(small_model, gpu_fleet):
     
     # Either no GPU meets the requirement, or the selected one does
     if result.recommended_gpu:
-        assert result.performance.latency_ms_per_token <= 0.01
+        assert result.performance.intertoken_latency_ms <= 0.01
     else:
         assert "latency requirement" in result.reasoning.lower()
 

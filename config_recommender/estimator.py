@@ -27,7 +27,7 @@ class PerformanceEstimate:
     
     Attributes:
         tokens_per_second: Estimated throughput in tokens/second
-        latency_ms_per_token: Estimated latency in ms per token
+        intertoken_latency_ms: Estimated inter-token latency in ms (time per token during generation)
         memory_required_gb: Total memory required in GB
         memory_weights_gb: Memory for model weights in GB
         memory_kv_cache_gb: Memory for KV cache in GB
@@ -36,7 +36,7 @@ class PerformanceEstimate:
         compute_bound: Whether inference is compute-bound vs memory-bound
     """
     tokens_per_second: float
-    latency_ms_per_token: float
+    intertoken_latency_ms: float
     memory_required_gb: float
     memory_weights_gb: float
     memory_kv_cache_gb: float
@@ -238,12 +238,12 @@ class SyntheticBenchmarkEstimator:
         if not fits_in_memory:
             tokens_per_second = 0.0
         
-        # Latency (ms per token)
-        latency_ms_per_token = (1000.0 / tokens_per_second) if tokens_per_second > 0 else float('inf')
+        # Inter-token latency (ms per token during generation)
+        intertoken_latency_ms = (1000.0 / tokens_per_second) if tokens_per_second > 0 else float('inf')
         
         return PerformanceEstimate(
             tokens_per_second=tokens_per_second,
-            latency_ms_per_token=latency_ms_per_token,
+            intertoken_latency_ms=intertoken_latency_ms,
             memory_required_gb=memory_required,
             memory_weights_gb=memory_breakdown["weights_gb"],
             memory_kv_cache_gb=memory_breakdown["kv_cache_gb"],

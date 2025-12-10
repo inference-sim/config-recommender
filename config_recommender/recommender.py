@@ -132,13 +132,13 @@ class GPURecommender:
         if self.latency_bound_ms is not None:
             latency_filtered = [
                 eval_data for eval_data in compatible_gpus
-                if eval_data["performance"].latency_ms_per_token <= self.latency_bound_ms
+                if eval_data["performance"].intertoken_latency_ms <= self.latency_bound_ms
             ]
             
             if not latency_filtered:
                 reasoning = (
                     f"No GPU meets latency requirement of {self.latency_bound_ms} ms/token. "
-                    f"Best achievable: {min(e['performance'].latency_ms_per_token for e in compatible_gpus):.2f} ms/token."
+                    f"Best achievable: {min(e['performance'].intertoken_latency_ms for e in compatible_gpus):.2f} ms/token."
                 )
                 
                 all_gpus_info = [
@@ -146,7 +146,7 @@ class GPURecommender:
                         "gpu_name": eval_data["gpu"].name,
                         "fits": True,
                         "tokens_per_second": eval_data["performance"].tokens_per_second,
-                        "latency_ms_per_token": eval_data["performance"].latency_ms_per_token,
+                        "intertoken_latency_ms": eval_data["performance"].intertoken_latency_ms,
                         "meets_latency_requirement": False,
                     }
                     for eval_data in compatible_gpus
@@ -180,7 +180,7 @@ class GPURecommender:
         reasoning_parts = [
             f"Selected {best_gpu.name} for {model.name}.",
             f"Throughput: {best_perf.tokens_per_second:.2f} tokens/sec.",
-            f"Latency: {best_perf.latency_ms_per_token:.2f} ms/token.",
+            f"Inter-token Latency: {best_perf.intertoken_latency_ms:.2f} ms/token.",
             f"Memory usage: {best_perf.memory_required_gb:.2f} GB / {best_gpu.memory_gb:.2f} GB.",
         ]
         
@@ -204,7 +204,7 @@ class GPURecommender:
                 "gpu_name": eval_data["gpu"].name,
                 "fits": True,
                 "tokens_per_second": eval_data["performance"].tokens_per_second,
-                "latency_ms_per_token": eval_data["performance"].latency_ms_per_token,
+                "intertoken_latency_ms": eval_data["performance"].intertoken_latency_ms,
                 "memory_required_gb": eval_data["performance"].memory_required_gb,
                 "memory_available_gb": eval_data["gpu"].memory_gb,
                 "compute_bound": eval_data["performance"].compute_bound,

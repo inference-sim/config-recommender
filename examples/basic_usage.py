@@ -59,7 +59,7 @@ def main():
     if result.performance:
         print(f"\nPerformance Estimates:")
         print(f"  Throughput: {result.performance.tokens_per_second:.2f} tokens/sec")
-        print(f"  Latency: {result.performance.latency_ms_per_token:.2f} ms/token")
+        print(f"  Inter-token Latency: {result.performance.intertoken_latency_ms:.2f} ms/token")
         print(f"  Memory Usage: {result.performance.memory_required_gb:.2f} GB")
         print(f"    - Weights: {result.performance.memory_weights_gb:.2f} GB")
         print(f"    - KV Cache: {result.performance.memory_kv_cache_gb:.2f} GB")
@@ -72,7 +72,7 @@ def main():
     for i, gpu_info in enumerate(result.all_compatible_gpus, 1):
         print(f"  {i}. {gpu_info['gpu_name']}")
         print(f"     Throughput: {gpu_info['tokens_per_second']:.2f} tokens/sec")
-        print(f"     Latency: {gpu_info['latency_ms_per_token']:.2f} ms/token")
+        print(f"     Inter-token Latency: {gpu_info['intertoken_latency_ms']:.2f} ms/token")
         print(f"     Cost: ${gpu_info['cost_per_hour']:.2f}/hour")
     
     print("\n" + "=" * 60)

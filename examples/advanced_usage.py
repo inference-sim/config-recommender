@@ -94,7 +94,7 @@ def main():
         print(f"  Recommended GPU: {result.recommended_gpu}")
         if result.performance:
             print(f"  Throughput: {result.performance.tokens_per_second:.2f} tokens/sec")
-            print(f"  Latency: {result.performance.latency_ms_per_token:.2f} ms/token")
+            print(f"  Inter-token Latency: {result.performance.intertoken_latency_ms:.2f} ms/token")
             print(f"  Memory: {result.performance.memory_required_gb:.2f} GB")
         print()
     
@@ -108,7 +108,7 @@ def main():
         print(f"Model: {result.model_name}")
         print(f"  Recommended GPU: {result.recommended_gpu or 'None (latency constraint not met)'}")
         if result.performance:
-            print(f"  Latency: {result.performance.latency_ms_per_token:.2f} ms/token (meets <10ms requirement)")
+            print(f"  Inter-token Latency: {result.performance.intertoken_latency_ms:.2f} ms/token (meets <10ms requirement)")
         print()
     
     # Example 3: Custom estimator configuration (FP32)

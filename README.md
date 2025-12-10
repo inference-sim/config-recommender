@@ -203,7 +203,7 @@ export HF_TOKEN=your_huggingface_token
       "recommended_gpu": "NVIDIA H100 80GB",
       "performance": {
         "tokens_per_second": 1234.56,
-        "latency_ms_per_token": 0.81,
+        "intertoken_latency_ms": 0.81,
         "memory_required_gb": 18.5,
         "fits_in_memory": true,
         "compute_bound": true

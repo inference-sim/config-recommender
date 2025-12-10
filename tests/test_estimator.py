@@ -142,8 +142,8 @@ def test_estimate_performance_fits(small_model, high_end_gpu):
     
     assert perf.fits_in_memory is True
     assert perf.tokens_per_second > 0
-    assert perf.latency_ms_per_token > 0
-    assert perf.latency_ms_per_token < float('inf')
+    assert perf.intertoken_latency_ms > 0
+    assert perf.intertoken_latency_ms < float('inf')
     assert perf.memory_required_gb <= high_end_gpu.memory_gb
 
 
@@ -154,7 +154,7 @@ def test_estimate_performance_does_not_fit(large_model, low_end_gpu):
     
     assert perf.fits_in_memory is False
     assert perf.tokens_per_second == 0.0
-    assert perf.latency_ms_per_token == float('inf')
+    assert perf.intertoken_latency_ms == float('inf')
     assert perf.memory_required_gb > low_end_gpu.memory_gb
 
 
