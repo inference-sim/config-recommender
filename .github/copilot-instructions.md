@@ -1,11 +1,11 @@
-# Copilot Instructions for config-explorer
+# Copilot Instructions for config-recommender
 
 ## Repository Overview
-This repository is `config-explorer`, a Python-based tool for configuration exploration for inference workloads.
+This repository is `config-recommender`, a Python-based tool for configuration exploration and recommendation for inference workloads.
 
 ## Tech Stack
 - **Language**: Python
-- **Primary Purpose**: Configuration exploration for inference systems
+- **Primary Purpose**: Configuration exploration and recommendation for inference systems
 
 ## Coding Standards
 
