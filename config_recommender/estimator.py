@@ -6,6 +6,21 @@ from typing import Optional
 from .models import ModelArchitecture, GPUSpec
 
 
+# Constants for performance estimation
+# For transformer inference forward pass, approximately 2 FLOPs per parameter
+# (1 multiply + 1 add for each weight in matrix multiplications)
+FLOPS_PER_PARAM = 2
+
+# Intermediate activations in transformer models typically require ~4x the hidden size
+# due to feedforward network expansions (commonly 4 * hidden_size in FFN)
+ACTIVATION_MULTIPLIER = 4
+
+# Memory bandwidth utilization factor for weight reading
+# In practice, not all weights are read from memory each token due to caching,
+# but this provides a conservative estimate. Real-world: ~0.5-0.7 for prefill, ~1.0 for decode
+MEMORY_READ_FACTOR = 1.0
+
+
 @dataclass
 class PerformanceEstimate:
     """Performance estimates for a model on a specific GPU.
@@ -114,11 +129,11 @@ class SyntheticBenchmarkEstimator:
         Returns:
             Memory required in GB
         """
-        # Rough estimate: batch_size * seq_len * hidden_size * num_layers * overhead
-        # Using a conservative multiplier
+        # Rough estimate: batch_size * seq_len * hidden_size * num_layers * ACTIVATION_MULTIPLIER
+        # ACTIVATION_MULTIPLIER accounts for FFN intermediate activations
         activation_elements = (
             self.batch_size * model.max_sequence_length * 
-            model.hidden_size * model.num_layers * 4  # 4x for intermediate activations
+            model.hidden_size * model.num_layers * ACTIVATION_MULTIPLIER
         )
         activation_bytes = activation_elements * self.precision_bytes
         activation_gb = activation_bytes / (1024 ** 3)
@@ -160,7 +175,7 @@ class SyntheticBenchmarkEstimator:
         For transformer models in inference:
         - Attention: 2 * num_layers * hidden_size^2 * (4 for QKV projections + attention)
         - FFN: 2 * num_layers * hidden_size * ffn_hidden_size (typically 4 * hidden_size)
-        - Total ≈ 2 * num_params (forward pass only, simplified)
+        - Total ≈ FLOPS_PER_PARAM * num_params (forward pass only, simplified)
         
         Args:
             model: Model architecture
@@ -168,9 +183,9 @@ class SyntheticBenchmarkEstimator:
         Returns:
             FLOPs per token
         """
-        # Simplified: ~2 FLOPs per parameter for forward pass
+        # Simplified: ~FLOPS_PER_PARAM FLOPs per parameter for forward pass
         # num_parameters is in billions
-        flops_per_token = 2 * model.num_parameters * 1e9
+        flops_per_token = FLOPS_PER_PARAM * model.num_parameters * 1e9
         return flops_per_token
     
     def estimate_performance(
@@ -208,8 +223,11 @@ class SyntheticBenchmarkEstimator:
         compute_tokens_per_second = effective_flops / flops_per_token
         
         # Memory-bandwidth-bound throughput
-        # Need to read model weights for each token
-        bytes_per_token = model.num_parameters * 1e9 * self.precision_bytes
+        # Simplified model: need to read model weights for each token
+        # Note: This is a conservative estimate. In practice, inference engines
+        # cache frequently accessed weights, reducing memory bandwidth requirements.
+        # MEMORY_READ_FACTOR can be tuned based on caching effectiveness.
+        bytes_per_token = model.num_parameters * 1e9 * self.precision_bytes * MEMORY_READ_FACTOR
         memory_tokens_per_second = (gpu.memory_bandwidth_gb_s * 1e9) / bytes_per_token
         
         # Actual throughput is limited by the bottleneck

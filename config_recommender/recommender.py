@@ -162,13 +162,13 @@ class GPURecommender:
             
             compatible_gpus = latency_filtered
         
-        # Sort by tokens/sec (descending)
+        # Sort by tokens/sec (descending), then by cost (ascending for tiebreaker)
+        # Using negative tokens_per_second to sort descending, positive cost to sort ascending
         compatible_gpus.sort(
             key=lambda x: (
-                x["performance"].tokens_per_second,
-                -x["gpu"].cost_per_hour if x["gpu"].cost_per_hour is not None else 0,
+                -x["performance"].tokens_per_second,  # Higher is better (use negative for ascending sort)
+                x["gpu"].cost_per_hour if x["gpu"].cost_per_hour is not None else float('inf'),  # Lower is better
             ),
-            reverse=True,
         )
         
         # Select the best GPU
