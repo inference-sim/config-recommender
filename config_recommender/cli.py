@@ -90,18 +90,6 @@ Examples:
         help="Sequence length (default: use model max_sequence_length)",
     )
 
-    parser.add_argument(
-        "--compute-efficiency",
-        type=float,
-        default=0.5,
-        help="Fraction of peak GPU compute actually achieved during inference (0.0-1.0). "
-        "Accounts for real-world utilization vs theoretical peak. Default: 0.5 (50%%)",
-    )
-
-    parser.add_argument(
-        "--pretty", action="store_true", help="Pretty-print JSON output"
-    )
-
     args = parser.parse_args()
 
     try:
@@ -117,12 +105,11 @@ Examples:
             print("Error: No GPUs found in input file", file=sys.stderr)
             sys.exit(1)
 
-        # Create estimator
+        # Create estimator (using default compute_efficiency of 0.5)
         precision_bytes = 2 if args.precision == "fp16" else 4
         estimator = SyntheticBenchmarkEstimator(
             batch_size=args.batch_size,
             precision_bytes=precision_bytes,
-            compute_efficiency=args.compute_efficiency,
         )
 
         # Create recommender
@@ -146,13 +133,11 @@ Examples:
                 "precision": args.precision,
                 "latency_bound_ms": args.latency_bound,
                 "sequence_length": args.sequence_length,
-                "compute_efficiency": args.compute_efficiency,
             },
         }
 
-        # Output results
-        indent = 2 if args.pretty else None
-        json_output = json.dumps(output_data, indent=indent)
+        # Output results (always pretty-printed)
+        json_output = json.dumps(output_data, indent=2)
 
         if args.output:
             with open(args.output, "w") as f:
