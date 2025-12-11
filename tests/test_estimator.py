@@ -115,12 +115,11 @@ def test_estimate_total_memory(small_model):
 
     assert "weights_gb" in memory
     assert "kv_cache_gb" in memory
-    assert "activation_gb" in memory
     assert "total_gb" in memory
 
     # Total should be sum of components with overhead
     expected_total = (
-        memory["weights_gb"] + memory["kv_cache_gb"] + memory["activation_gb"]
+        memory["weights_gb"] + memory["kv_cache_gb"]
     ) * estimator.memory_overhead_factor
 
     assert memory["total_gb"] == pytest.approx(expected_total, rel=0.01)

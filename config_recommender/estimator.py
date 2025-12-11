@@ -30,7 +30,6 @@ class PerformanceEstimate:
         memory_required_gb: Total memory required in GB
         memory_weights_gb: Memory for model weights in GB
         memory_kv_cache_gb: Memory for KV cache in GB
-        memory_activation_gb: Memory for activations in GB
         fits_in_memory: Whether the model fits in GPU memory
         compute_bound: Whether inference is compute-bound vs memory-bound
     """
@@ -40,7 +39,6 @@ class PerformanceEstimate:
     memory_required_gb: float
     memory_weights_gb: float
     memory_kv_cache_gb: float
-    memory_activation_gb: float
     fits_in_memory: bool
     compute_bound: bool
 
@@ -162,16 +160,12 @@ class SyntheticBenchmarkEstimator:
 
         weights_gb = self.estimate_memory_weights(model)
         kv_cache_gb = self.estimate_memory_kv_cache(model, sequence_length)
-        activation_gb = self.estimate_memory_activation(model)
 
-        total_gb = (
-            weights_gb + kv_cache_gb + activation_gb
-        ) * self.memory_overhead_factor
+        total_gb = (weights_gb + kv_cache_gb) * self.memory_overhead_factor
 
         return {
             "weights_gb": weights_gb,
             "kv_cache_gb": kv_cache_gb,
-            "activation_gb": activation_gb,
             "total_gb": total_gb,
         }
 
@@ -257,7 +251,6 @@ class SyntheticBenchmarkEstimator:
             memory_required_gb=memory_required,
             memory_weights_gb=memory_breakdown["weights_gb"],
             memory_kv_cache_gb=memory_breakdown["kv_cache_gb"],
-            memory_activation_gb=memory_breakdown["activation_gb"],
             fits_in_memory=fits_in_memory,
             compute_bound=compute_bound,
         )

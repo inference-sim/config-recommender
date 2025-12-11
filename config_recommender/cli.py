@@ -39,15 +39,15 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Recommend GPUs for models in models.json using GPUs from gpus.json
-  python -m config_recommender.cli --models models.json --gpus gpus.json
+  # Recommend GPUs for models using example data files
+  config-recommender --models examples/models.json --gpus examples/gpus.json
 
   # With latency constraint and custom parameters
-  python -m config_recommender.cli --models models.json --gpus gpus.json \\
+  config-recommender --models examples/models.json --gpus examples/gpus.json \\
       --latency-bound 10 --batch-size 1 --precision fp16
 
   # Output to file
-  python -m config_recommender.cli --models models.json --gpus gpus.json \\
+  config-recommender --models examples/models.json --gpus examples/gpus.json \\
       --output recommendations.json
         """,
     )
