@@ -154,9 +154,19 @@ Examples:
         )
         for result in results:
             if result.recommended_gpu:
-                print(
-                    f"  {result.model_name}: {result.recommended_gpu}", file=sys.stderr
-                )
+                # Include TP size if using tensor parallelism
+                if result.performance and result.performance.tensor_parallel_size > 1:
+                    tp_size = result.performance.tensor_parallel_size
+                    print(
+                        f"  {result.model_name}: {tp_size}x {result.recommended_gpu} "
+                        f"(TP={tp_size})",
+                        file=sys.stderr,
+                    )
+                else:
+                    print(
+                        f"  {result.model_name}: {result.recommended_gpu}",
+                        file=sys.stderr,
+                    )
             else:
                 print(f"  {result.model_name}: No compatible GPU", file=sys.stderr)
 
