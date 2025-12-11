@@ -9,7 +9,7 @@ Config Recommender is a Python library that recommends optimal GPU configuration
 ## Features
 
 - **Deterministic Synthetic Benchmarking**: Estimates performance using architecture-derived computations (FLOPs, memory footprints)
-- **Memory Analysis**: Calculates memory requirements for weights, KV cache, and activations
+- **Memory Analysis**: Calculates memory requirements for weights, KV cache, and activations (WIP)
 - **Performance Prediction**: Estimates throughput (tokens/sec) and latency (ms/token) for each GPU
 - **Smart GPU Selection**: Filters compatible GPUs and selects optimal based on customizable objectives
 - **Clean Python API**: Easy-to-use programmatic interface
@@ -24,13 +24,13 @@ It's recommended to use a virtual environment to avoid dependency conflicts:
 
 ```bash
 # Create a virtual environment
-python -m venv venv
+python -m venv .venv
 
 # Activate the virtual environment
 # On Linux/macOS:
-source venv/bin/activate
+source .venv/bin/activate
 # On Windows:
-# venv\Scripts\activate
+# .venv\Scripts\activate
 
 # Upgrade pip
 pip install --upgrade pip
@@ -65,7 +65,7 @@ from config_recommender import (
 # Define a model using HuggingFace identifier
 # No need to manually specify model parameters - they're fetched automatically
 model = ModelArchitecture(
-    name="mistralai/Mixtral-8x7B-v0.1",  # HuggingFace model identifier
+    name="Qwen/Qwen2.5-7B",  # HuggingFace model identifier
 )
 
 # Define available GPUs
@@ -94,7 +94,7 @@ result = recommender.recommend_gpu(model, gpus)
 
 print(f"Recommended GPU: {result.recommended_gpu}")
 print(f"Throughput: {result.performance.tokens_per_second:.2f} tokens/sec")
-print(f"Latency: {result.performance.latency_ms_per_token:.2f} ms/token")
+print(f"Latency: {result.performance.intertoken_latency_ms:.2f} ms/token")
 print(f"Reasoning: {result.reasoning}")
 ```
 
@@ -135,7 +135,7 @@ The recommendation engine estimates performance using:
 1. **Memory Requirements** (via config_explorer):
    - **Weights**: Accurate model size from HuggingFace safetensors
    - **KV Cache**: Precise calculation accounting for attention type (MHA/GQA/MQA/MLA)
-   - **Activations**: Estimated based on batch size, sequence length, and hidden dimensions
+   - **Activations** (WIP): Estimated based on batch size, sequence length, and hidden dimensions
 
 2. **Performance Estimation**:
    - **Compute-bound throughput**: Based on FLOPs required per token and GPU's peak FP16 performance
