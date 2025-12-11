@@ -1,8 +1,9 @@
 """Unit tests for GPU recommender."""
 
 import pytest
-from config_recommender.models import ModelArchitecture, GPUSpec
+
 from config_recommender.estimator import SyntheticBenchmarkEstimator
+from config_recommender.models import GPUSpec, ModelArchitecture
 from config_recommender.recommender import GPURecommender, RecommendationResult
 
 
@@ -78,7 +79,7 @@ def test_recommender_initialization():
     recommender = GPURecommender()
     assert recommender.estimator is not None
     assert recommender.latency_bound_ms is None
-    
+
     recommender_with_latency = GPURecommender(latency_bound_ms=10.0)
     assert recommender_with_latency.latency_bound_ms == 10.0
 
@@ -87,7 +88,7 @@ def test_recommend_gpu_basic(small_model, gpu_fleet):
     """Test basic GPU recommendation."""
     recommender = GPURecommender()
     result = recommender.recommend_gpu(small_model, gpu_fleet)
-    
+
     assert isinstance(result, RecommendationResult)
     assert result.model_name == "small-7b"
     assert result.recommended_gpu is not None
@@ -100,10 +101,10 @@ def test_recommend_gpu_selects_best_performance(small_model, gpu_fleet):
     """Test that recommender selects GPU with best performance."""
     recommender = GPURecommender()
     result = recommender.recommend_gpu(small_model, gpu_fleet)
-    
+
     # Should select a GPU (model fits in all GPUs with 32GB+)
     assert result.recommended_gpu is not None
-    
+
     # The recommended GPU should have highest tokens/sec among compatible ones
     if len(result.all_compatible_gpus) > 1:
         recommended_perf = result.all_compatible_gpus[0]["tokens_per_second"]
@@ -123,10 +124,10 @@ def test_recommend_gpu_no_compatible(large_model):
             tflops_fp32=8.1,
         ),
     ]
-    
+
     recommender = GPURecommender()
     result = recommender.recommend_gpu(large_model, small_gpus)
-    
+
     assert result.recommended_gpu is None
     assert result.performance is None
     assert "No compatible GPU" in result.reasoning
@@ -137,7 +138,7 @@ def test_recommend_gpu_with_latency_bound(small_model, gpu_fleet):
     # Very strict latency bound that might not be met
     recommender = GPURecommender(latency_bound_ms=0.01)
     result = recommender.recommend_gpu(small_model, gpu_fleet)
-    
+
     # Either no GPU meets the requirement, or the selected one does
     if result.recommended_gpu:
         assert result.performance.intertoken_latency_ms <= 0.01
@@ -150,11 +151,11 @@ def test_recommend_for_models(small_model, large_model, gpu_fleet):
     models = [small_model, large_model]
     recommender = GPURecommender()
     results = recommender.recommend_for_models(models, gpu_fleet)
-    
+
     assert len(results) == 2
     assert results[0].model_name == "small-7b"
     assert results[1].model_name == "large-70b"
-    
+
     # Small model should get a recommendation
     assert results[0].recommended_gpu is not None
 
@@ -163,9 +164,9 @@ def test_recommendation_result_to_dict(small_model, gpu_fleet):
     """Test converting recommendation result to dictionary."""
     recommender = GPURecommender()
     result = recommender.recommend_gpu(small_model, gpu_fleet)
-    
+
     result_dict = result.to_dict()
-    
+
     assert isinstance(result_dict, dict)
     assert "model_name" in result_dict
     assert "recommended_gpu" in result_dict
@@ -178,7 +179,7 @@ def test_recommendation_preserves_memory_info(small_model, gpu_fleet):
     """Test that memory information is included in results."""
     recommender = GPURecommender()
     result = recommender.recommend_gpu(small_model, gpu_fleet)
-    
+
     for gpu_info in result.all_compatible_gpus:
         assert "memory_required_gb" in gpu_info
         assert "memory_available_gb" in gpu_info
@@ -189,7 +190,7 @@ def test_recommendation_includes_cost_info(small_model, gpu_fleet):
     """Test that cost information is included when available."""
     recommender = GPURecommender()
     result = recommender.recommend_gpu(small_model, gpu_fleet)
-    
+
     for gpu_info in result.all_compatible_gpus:
         assert "cost_per_hour" in gpu_info
         # Cost should match the original GPU spec
@@ -201,9 +202,9 @@ def test_recommendation_reasoning_quality(small_model, gpu_fleet):
     """Test that reasoning contains useful information."""
     recommender = GPURecommender()
     result = recommender.recommend_gpu(small_model, gpu_fleet)
-    
+
     reasoning = result.reasoning.lower()
-    
+
     # Should mention the selected GPU
     if result.recommended_gpu:
         assert result.recommended_gpu.lower() in reasoning
@@ -214,13 +215,20 @@ def test_recommendation_reasoning_quality(small_model, gpu_fleet):
 def test_custom_sequence_length(small_model, gpu_fleet):
     """Test recommendation with custom sequence length."""
     recommender = GPURecommender()
-    
-    result_short = recommender.recommend_gpu(small_model, gpu_fleet, sequence_length=512)
-    result_long = recommender.recommend_gpu(small_model, gpu_fleet, sequence_length=4096)
-    
+
+    result_short = recommender.recommend_gpu(
+        small_model, gpu_fleet, sequence_length=512
+    )
+    result_long = recommender.recommend_gpu(
+        small_model, gpu_fleet, sequence_length=4096
+    )
+
     # Both should get recommendations (small model)
     assert result_short.recommended_gpu is not None
     assert result_long.recommended_gpu is not None
-    
+
     # Longer sequence needs more memory
-    assert result_long.performance.memory_required_gb >= result_short.performance.memory_required_gb
+    assert (
+        result_long.performance.memory_required_gb
+        >= result_short.performance.memory_required_gb
+    )

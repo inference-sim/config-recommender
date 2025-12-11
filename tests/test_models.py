@@ -1,7 +1,8 @@
 """Unit tests for data models."""
 
 import pytest
-from config_recommender.models import ModelArchitecture, GPUSpec
+
+from config_recommender.models import GPUSpec, ModelArchitecture
 
 
 def test_model_architecture_creation():
@@ -15,7 +16,7 @@ def test_model_architecture_creation():
         vocab_size=32000,
         max_sequence_length=2048,
     )
-    
+
     assert model.name == "test-model"
     assert model.num_parameters == 7.0
     assert model.num_layers == 32
@@ -33,7 +34,7 @@ def test_model_architecture_with_gqa():
         num_kv_heads=8,
         vocab_size=32000,
     )
-    
+
     assert model.num_kv_heads == 8
     assert model.num_kv_heads != model.num_attention_heads
 
@@ -48,7 +49,7 @@ def test_gpu_spec_creation():
         tflops_fp32=156.0,
         cost_per_hour=3.67,
     )
-    
+
     assert gpu.name == "NVIDIA A100"
     assert gpu.memory_gb == 80.0
     assert gpu.cost_per_hour == 3.67
@@ -63,5 +64,5 @@ def test_gpu_spec_without_cost():
         tflops_fp16=125.0,
         tflops_fp32=62.5,
     )
-    
+
     assert gpu.cost_per_hour is None

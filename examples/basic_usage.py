@@ -1,22 +1,18 @@
 #!/usr/bin/env python3
 """Example: Basic GPU recommendation using the Python API."""
 
-from config_recommender import (
-    ModelArchitecture,
-    GPUSpec,
-    GPURecommender,
-)
+from config_recommender import GPURecommender, GPUSpec, ModelArchitecture
 
 
 def main():
     """Run basic GPU recommendation example."""
-    
+
     # Define a model using HuggingFace identifier
     # Model details are automatically fetched from HuggingFace
     model = ModelArchitecture(
         name="Qwen/Qwen2.5-7B",  # HuggingFace model identifier
     )
-    
+
     # Define available GPUs
     gpus = [
         GPUSpec(
@@ -44,37 +40,43 @@ def main():
             cost_per_hour=2.48,
         ),
     ]
-    
+
     # Get recommendation
     print("=" * 60)
     print("GPU Recommendation Example")
     print("=" * 60)
-    
+
     recommender = GPURecommender()
     result = recommender.recommend_gpu(model, gpus)
-    
+
     print(f"\nModel: {result.model_name}")
     print(f"Recommended GPU: {result.recommended_gpu}")
-    
+
     if result.performance:
         print(f"\nPerformance Estimates:")
         print(f"  Throughput: {result.performance.tokens_per_second:.2f} tokens/sec")
-        print(f"  Inter-token Latency: {result.performance.intertoken_latency_ms:.2f} ms/token")
+        print(
+            f"  Inter-token Latency: {result.performance.intertoken_latency_ms:.2f} ms/token"
+        )
         print(f"  Memory Usage: {result.performance.memory_required_gb:.2f} GB")
         print(f"    - Weights: {result.performance.memory_weights_gb:.2f} GB")
         print(f"    - KV Cache: {result.performance.memory_kv_cache_gb:.2f} GB")
         print(f"    - Activations: {result.performance.memory_activation_gb:.2f} GB")
-        print(f"  Bottleneck: {'Compute' if result.performance.compute_bound else 'Memory Bandwidth'}")
-    
+        print(
+            f"  Bottleneck: {'Compute' if result.performance.compute_bound else 'Memory Bandwidth'}"
+        )
+
     print(f"\nReasoning: {result.reasoning}")
-    
+
     print(f"\nAll Compatible GPUs ({len(result.all_compatible_gpus)}):")
     for i, gpu_info in enumerate(result.all_compatible_gpus, 1):
         print(f"  {i}. {gpu_info['gpu_name']}")
         print(f"     Throughput: {gpu_info['tokens_per_second']:.2f} tokens/sec")
-        print(f"     Inter-token Latency: {gpu_info['intertoken_latency_ms']:.2f} ms/token")
+        print(
+            f"     Inter-token Latency: {gpu_info['intertoken_latency_ms']:.2f} ms/token"
+        )
         print(f"     Cost: ${gpu_info['cost_per_hour']:.2f}/hour")
-    
+
     print("\n" + "=" * 60)
 
 
