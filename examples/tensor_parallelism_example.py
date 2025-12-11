@@ -48,11 +48,17 @@ def main():
         if tp_size > 1:
             print(f"Tensor Parallel Size: {tp_size} GPUs")
             print(
-                f"\nThis model requires {tp_size} GPUs working together using tensor parallelism."
+                f"\nThis model requires {tp_size} GPUs working together "
+                f"using tensor parallelism."
             )
+            # Calculate total model memory (before TP sharding)
+            total_memory = (
+                result.performance.memory_weights_gb
+                + result.performance.memory_kv_cache_gb
+            ) * tp_size
             print(
                 f"Each GPU will hold {result.performance.memory_required_gb:.2f} GB "
-                f"of the total {result.performance.memory_required_gb * tp_size:.2f} GB model."
+                f"of the model (total: ~{total_memory:.2f} GB distributed)."
             )
         else:
             print("Tensor Parallel Size: 1 GPU (single GPU inference)")

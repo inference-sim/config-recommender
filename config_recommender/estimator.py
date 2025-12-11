@@ -249,9 +249,9 @@ class SyntheticBenchmarkEstimator:
             / tensor_parallel_size
         )
         total_bandwidth = gpu.memory_bandwidth_gb_s * 1e9 * tensor_parallel_size
-        memory_tokens_per_second = total_bandwidth / (
-            bytes_per_token_per_gpu * tensor_parallel_size
-        )
+        # Total throughput = total bandwidth / bytes per token per GPU
+        # (Each GPU reads bytes_per_token_per_gpu, using its bandwidth)
+        memory_tokens_per_second = total_bandwidth / bytes_per_token_per_gpu
 
         # Actual throughput is limited by the bottleneck
         tokens_per_second = min(compute_tokens_per_second, memory_tokens_per_second)
