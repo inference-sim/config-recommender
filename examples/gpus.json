@@ -1,0 +1,50 @@
+[
+  {
+    "name": "NVIDIA A100 80GB",
+    "memory_gb": 80.0,
+    "memory_bandwidth_gb_s": 2039.0,
+    "tflops_fp16": 312.0,
+    "tflops_fp32": 156.0,
+    "cost_per_hour": 3.67
+  },
+  {
+    "name": "NVIDIA A100 40GB",
+    "memory_gb": 40.0,
+    "memory_bandwidth_gb_s": 1555.0,
+    "tflops_fp16": 312.0,
+    "tflops_fp32": 156.0,
+    "cost_per_hour": 2.93
+  },
+  {
+    "name": "NVIDIA H100 80GB",
+    "memory_gb": 80.0,
+    "memory_bandwidth_gb_s": 3350.0,
+    "tflops_fp16": 989.0,
+    "tflops_fp32": 494.5,
+    "cost_per_hour": 4.76
+  },
+  {
+    "name": "NVIDIA V100 32GB",
+    "memory_gb": 32.0,
+    "memory_bandwidth_gb_s": 900.0,
+    "tflops_fp16": 125.0,
+    "tflops_fp32": 62.5,
+    "cost_per_hour": 2.48
+  },
+  {
+    "name": "NVIDIA T4 16GB",
+    "memory_gb": 16.0,
+    "memory_bandwidth_gb_s": 300.0,
+    "tflops_fp16": 65.0,
+    "tflops_fp32": 8.1,
+    "cost_per_hour": 0.526
+  },
+  {
+    "name": "NVIDIA L4 24GB",
+    "memory_gb": 24.0,
+    "memory_bandwidth_gb_s": 300.0,
+    "tflops_fp16": 121.0,
+    "tflops_fp32": 60.5,
+    "cost_per_hour": 0.796
+  }
+]

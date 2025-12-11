@@ -1,0 +1,2 @@
+# Core dependencies
+config_explorer @ git+https://github.com/llm-d/llm-d-benchmark.git#subdirectory=config_explorer
