@@ -110,11 +110,11 @@ config-recommender --models examples/models.json --gpus examples/gpus.json \
 
 # Save output to file
 config-recommender --models examples/models.json --gpus examples/gpus.json \
-    --output recommendations.json --pretty
+    --output recommendations.json
 
 # Custom parameters
 config-recommender --models examples/models.json --gpus examples/gpus.json \
-    --batch-size 1 --precision fp16 --compute-efficiency 0.5
+    --batch-size 1 --precision fp16
 ```
 
 ## How It Works
