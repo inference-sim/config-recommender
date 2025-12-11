@@ -32,13 +32,15 @@ class PerformanceEstimate:
 
     Attributes:
         tokens_per_second: Estimated throughput in tokens/second
-        intertoken_latency_ms: Estimated inter-token latency in ms (time per token during generation)
+        intertoken_latency_ms: Estimated inter-token latency in ms
+            (time per token during generation)
         memory_required_gb: Total memory required in GB (per GPU)
         memory_weights_gb: Memory for model weights in GB (per GPU)
         memory_kv_cache_gb: Memory for KV cache in GB (per GPU)
         fits_in_memory: Whether the model fits in GPU memory
         compute_bound: Whether inference is compute-bound vs memory-bound
-        tensor_parallel_size: Number of GPUs for tensor parallelism (1 for single GPU)
+        tensor_parallel_size: Number of GPUs for tensor parallelism
+            (1 for single GPU)
     """
 
     tokens_per_second: float
@@ -91,9 +93,7 @@ class SyntheticBenchmarkEstimator:
         """
         return model.get_model_memory_gb()
 
-    def estimate_memory_kv_cache(
-        self, model: ModelArchitecture, sequence_length: int
-    ) -> float:
+    def estimate_memory_kv_cache(self, model: ModelArchitecture, sequence_length: int) -> float:
         """Estimate memory required for KV cache in GB.
 
         Uses config_explorer library for HF models, or falls back to calculation.
@@ -121,9 +121,7 @@ class SyntheticBenchmarkEstimator:
             Memory required in GB
         """
         # Try to get accurate KV cache detail from HF
-        kv_detail = model.get_kv_cache_detail(
-            model.get_max_sequence_length(), self.batch_size
-        )
+        kv_detail = model.get_kv_cache_detail(model.get_max_sequence_length(), self.batch_size)
         if kv_detail:
             activation_elements = (
                 self.batch_size
@@ -219,12 +217,12 @@ class SyntheticBenchmarkEstimator:
 
         # Memory estimates - weights are split across TP GPUs
         memory_breakdown = self.estimate_total_memory(model, sequence_length)
-        
+
         # With tensor parallelism, model weights are sharded across GPUs
         # KV cache is also sharded (each GPU handles a subset of attention heads)
         weights_per_gpu = memory_breakdown["weights_gb"] / tensor_parallel_size
         kv_cache_per_gpu = memory_breakdown["kv_cache_gb"] / tensor_parallel_size
-        
+
         # Memory overhead still applies per GPU
         memory_required = (weights_per_gpu + kv_cache_per_gpu) * self.memory_overhead_factor
         fits_in_memory = memory_required <= gpu.memory_gb
@@ -244,15 +242,21 @@ class SyntheticBenchmarkEstimator:
         # With TP, each GPU reads its portion of weights
         # Total bandwidth scales with number of GPUs
         bytes_per_token_per_gpu = (
-            model.get_num_parameters() * 1e9 * self.precision_bytes * MEMORY_READ_FACTOR / tensor_parallel_size
+            model.get_num_parameters()
+            * 1e9
+            * self.precision_bytes
+            * MEMORY_READ_FACTOR
+            / tensor_parallel_size
         )
         total_bandwidth = gpu.memory_bandwidth_gb_s * 1e9 * tensor_parallel_size
-        memory_tokens_per_second = total_bandwidth / (bytes_per_token_per_gpu * tensor_parallel_size)
+        memory_tokens_per_second = total_bandwidth / (
+            bytes_per_token_per_gpu * tensor_parallel_size
+        )
 
         # Actual throughput is limited by the bottleneck
         tokens_per_second = min(compute_tokens_per_second, memory_tokens_per_second)
         compute_bound = compute_tokens_per_second < memory_tokens_per_second
-        
+
         # Apply TP communication overhead (reduces throughput)
         if tensor_parallel_size > 1:
             tp_overhead = 1.0 - (TP_OVERHEAD_PER_RANK * (tensor_parallel_size - 1))
