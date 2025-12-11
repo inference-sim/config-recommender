@@ -107,30 +107,52 @@ class GPURecommender:
         ]
 
         if not compatible_gpus:
-            # No GPU can fit this model
-            all_gpus_info = [
-                {
-                    "gpu_name": eval_data["gpu"].name,
-                    "fits": False,
-                    "memory_required_gb": eval_data["performance"].memory_required_gb,
-                    "memory_available_gb": eval_data["gpu"].memory_gb,
-                }
-                for eval_data in gpu_evaluations
-            ]
+            # No single GPU can fit this model - try tensor parallelism
+            # Try TP values of 2, 4, 8
+            tp_candidates = []
+            for tp_size in [2, 4, 8]:
+                for gpu in available_gpus:
+                    perf = self.estimator.estimate_performance(
+                        model, gpu, sequence_length, tensor_parallel_size=tp_size
+                    )
+                    if perf.fits_in_memory:
+                        tp_candidates.append(
+                            {
+                                "gpu": gpu,
+                                "performance": perf,
+                                "tp_size": tp_size,
+                            }
+                        )
+            
+            if not tp_candidates:
+                # Even with TP, model doesn't fit
+                all_gpus_info = [
+                    {
+                        "gpu_name": eval_data["gpu"].name,
+                        "fits": False,
+                        "memory_required_gb": eval_data["performance"].memory_required_gb,
+                        "memory_available_gb": eval_data["gpu"].memory_gb,
+                        "tensor_parallel_size": 1,
+                    }
+                    for eval_data in gpu_evaluations
+                ]
 
-            reasoning = (
-                f"No compatible GPU found. Model requires "
-                f"{gpu_evaluations[0]['performance'].memory_required_gb:.2f} GB, "
-                f"but largest GPU has {max(g['gpu'].memory_gb for g in gpu_evaluations):.2f} GB."
-            )
+                reasoning = (
+                    f"No compatible GPU found even with tensor parallelism. Model requires "
+                    f"{gpu_evaluations[0]['performance'].memory_required_gb:.2f} GB per GPU, "
+                    f"but largest GPU has {max(g['gpu'].memory_gb for g in gpu_evaluations):.2f} GB."
+                )
 
-            return RecommendationResult(
-                model_name=model.name,
-                recommended_gpu=None,
-                performance=None,
-                all_compatible_gpus=all_gpus_info,
-                reasoning=reasoning,
-            )
+                return RecommendationResult(
+                    model_name=model.name,
+                    recommended_gpu=None,
+                    performance=None,
+                    all_compatible_gpus=all_gpus_info,
+                    reasoning=reasoning,
+                )
+            
+            # We have TP candidates - use them as compatible_gpus
+            compatible_gpus = tp_candidates
 
         # Filter by latency bound if specified
         if self.latency_bound_ms is not None:
@@ -191,12 +213,20 @@ class GPURecommender:
         best_perf = best_eval["performance"]
 
         # Build reasoning
-        reasoning_parts = [
-            f"Selected {best_gpu.name} for {model.name}.",
-            f"Throughput: {best_perf.tokens_per_second:.2f} tokens/sec.",
-            f"Inter-token Latency: {best_perf.intertoken_latency_ms:.2f} ms/token.",
-            f"Memory usage: {best_perf.memory_required_gb:.2f} GB / {best_gpu.memory_gb:.2f} GB.",
-        ]
+        if best_perf.tensor_parallel_size > 1:
+            reasoning_parts = [
+                f"Selected {best_perf.tensor_parallel_size}x {best_gpu.name} (TP={best_perf.tensor_parallel_size}) for {model.name}.",
+                f"Throughput: {best_perf.tokens_per_second:.2f} tokens/sec.",
+                f"Inter-token Latency: {best_perf.intertoken_latency_ms:.2f} ms/token.",
+                f"Memory usage per GPU: {best_perf.memory_required_gb:.2f} GB / {best_gpu.memory_gb:.2f} GB.",
+            ]
+        else:
+            reasoning_parts = [
+                f"Selected {best_gpu.name} for {model.name}.",
+                f"Throughput: {best_perf.tokens_per_second:.2f} tokens/sec.",
+                f"Inter-token Latency: {best_perf.intertoken_latency_ms:.2f} ms/token.",
+                f"Memory usage: {best_perf.memory_required_gb:.2f} GB / {best_gpu.memory_gb:.2f} GB.",
+            ]
 
         if best_perf.compute_bound:
             reasoning_parts.append("Performance is compute-bound.")
@@ -205,10 +235,17 @@ class GPURecommender:
 
         if len(compatible_gpus) > 1:
             second_best = compatible_gpus[1]
-            reasoning_parts.append(
-                f"Next best: {second_best['gpu'].name} "
-                f"({second_best['performance'].tokens_per_second:.2f} tokens/sec)."
-            )
+            second_perf = second_best['performance']
+            if second_perf.tensor_parallel_size > 1:
+                reasoning_parts.append(
+                    f"Next best: {second_perf.tensor_parallel_size}x {second_best['gpu'].name} "
+                    f"({second_perf.tokens_per_second:.2f} tokens/sec)."
+                )
+            else:
+                reasoning_parts.append(
+                    f"Next best: {second_best['gpu'].name} "
+                    f"({second_perf.tokens_per_second:.2f} tokens/sec)."
+                )
 
         reasoning = " ".join(reasoning_parts)
 
@@ -223,6 +260,7 @@ class GPURecommender:
                 "memory_available_gb": eval_data["gpu"].memory_gb,
                 "compute_bound": eval_data["performance"].compute_bound,
                 "cost_per_hour": eval_data["gpu"].cost_per_hour,
+                "tensor_parallel_size": eval_data["performance"].tensor_parallel_size,
             }
             for eval_data in compatible_gpus
         ]
