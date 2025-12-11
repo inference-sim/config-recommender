@@ -39,12 +39,17 @@ pip install --upgrade pip
 ### Installing the Package
 
 ```bash
-# Install from source
+# Install core dependencies
+pip install -r requirements.txt
+
+# Install the package in development mode
 pip install -e .
 
-# Install with development dependencies
+# Or install with development dependencies (testing, linting)
 pip install -e ".[dev]"
 ```
+
+The project uses modern Python packaging with `pyproject.toml`. Dependencies are also available in `requirements.txt` for compatibility.
 
 ## Quick Start
 
