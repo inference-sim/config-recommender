@@ -3,6 +3,8 @@
 from dataclasses import asdict, dataclass
 from typing import Any, Dict, List, Optional
 
+from config_explorer.capacity_planner import find_possible_tp
+
 from .estimator import PerformanceEstimate, SyntheticBenchmarkEstimator
 from .models import GPUSpec, ModelArchitecture
 
@@ -106,9 +108,19 @@ class GPURecommender:
 
         if not compatible_gpus:
             # No single GPU can fit this model - try tensor parallelism
-            # Try TP values of 2, 4, 8
+            # Get possible TP sizes from capacity_planner
+            tp_sizes_to_try = []
+            if model._model_config is not None:
+                # Get TP sizes from capacity planner (excludes 1 since we already tried it)
+                all_tp_sizes = find_possible_tp(model._model_config)
+                # Filter to reasonable TP sizes (2-16) to avoid excessive overhead
+                tp_sizes_to_try = [tp for tp in all_tp_sizes if 1 < tp <= 16]
+            else:
+                # Fallback to default range if model config not available
+                tp_sizes_to_try = [2, 4, 8]
+
             tp_candidates = []
-            for tp_size in [2, 4, 8]:
+            for tp_size in tp_sizes_to_try:
                 for gpu in available_gpus:
                     perf = self.estimator.estimate_performance(
                         model, gpu, sequence_length, tensor_parallel_size=tp_size
@@ -216,8 +228,7 @@ class GPURecommender:
                 f"Selected {best_perf.tensor_parallel_size}x {best_gpu.name} "
                 f"(TP={best_perf.tensor_parallel_size}) for {model.name}.",
                 f"Throughput: {best_perf.tokens_per_second:.2f} tokens/sec.",
-                f"Inter-token Latency: {best_perf.intertoken_latency_ms:.2f} "
-                f"ms/token.",
+                f"Inter-token Latency: {best_perf.intertoken_latency_ms:.2f} " f"ms/token.",
                 f"Memory usage per GPU: {best_perf.memory_required_gb:.2f} GB / "
                 f"{best_gpu.memory_gb:.2f} GB.",
             ]
@@ -225,8 +236,7 @@ class GPURecommender:
             reasoning_parts = [
                 f"Selected {best_gpu.name} for {model.name}.",
                 f"Throughput: {best_perf.tokens_per_second:.2f} tokens/sec.",
-                f"Inter-token Latency: {best_perf.intertoken_latency_ms:.2f} "
-                f"ms/token.",
+                f"Inter-token Latency: {best_perf.intertoken_latency_ms:.2f} " f"ms/token.",
                 f"Memory usage: {best_perf.memory_required_gb:.2f} GB / "
                 f"{best_gpu.memory_gb:.2f} GB.",
             ]

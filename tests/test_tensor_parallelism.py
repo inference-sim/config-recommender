@@ -82,18 +82,18 @@ def test_tp_overhead_reduces_performance(very_large_model, h100_gpu):
     # Ideal TP=4 would be 2x TP=2, but overhead reduces this
     # TP=4 overhead factor: 0.85, TP=2 overhead factor: 0.95
     # Efficiency ratio: 0.85 / 0.95 = 0.894, so we expect ~10% performance loss
-    
+
     # Check that we still get scaling benefits despite overhead
     assert perf_tp4.tokens_per_second > perf_tp2.tokens_per_second
     assert perf_tp8.tokens_per_second > perf_tp4.tokens_per_second
-    
+
     # Verify that overhead does reduce performance (not perfect 2x/4x scaling)
     # With overhead, we'd expect slightly less than perfect 2x and 4x scaling
     # But memory bandwidth also scales, so actual scaling depends on bottleneck
     # Just verify increasing TP provides benefits
     ratio_4_to_2 = perf_tp4.tokens_per_second / perf_tp2.tokens_per_second
     ratio_8_to_4 = perf_tp8.tokens_per_second / perf_tp4.tokens_per_second
-    
+
     # Each doubling should provide improvement but may not be exactly 2x
     assert ratio_4_to_2 > 1.5  # At least 1.5x improvement
     assert ratio_8_to_4 > 1.5  # At least 1.5x improvement
@@ -132,14 +132,14 @@ def test_recommend_best_tp_value(very_large_model, h100_gpu):
 
 
 def test_tp_values_in_range(very_large_model, h100_gpu):
-    """Test that TP values are in the expected range (2, 4, 8)."""
+    """Test that TP values are from capacity_planner and within reasonable range."""
     recommender = GPURecommender()
     result = recommender.recommend_gpu(very_large_model, [h100_gpu])
 
-    # All TP values should be in the range [2, 4, 8]
+    # All TP values should be > 1 (since single GPU doesn't fit) and <= 16
     for config in result.all_compatible_gpus:
         tp_size = config.get("tensor_parallel_size", 1)
-        assert tp_size in [2, 4, 8]
+        assert 1 < tp_size <= 16, f"TP size {tp_size} outside reasonable range"
 
 
 def test_model_fits_single_gpu_no_tp(h100_gpu):
