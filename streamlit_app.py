@@ -61,7 +61,7 @@ def main():
     """Main Streamlit application."""
     st.markdown('<h1 class="main-header">🖥️ GPU Recommendation Engine</h1>', unsafe_allow_html=True)
     st.markdown(
-        "**Find the optimal GPU for your ML model based on synthetic performance estimates**"
+        "**Find the optimal GPU for your ML model based on estimated synthetic performance**"
     )
 
     # Initialize session state
@@ -86,21 +86,11 @@ def main():
         )
         precision_bytes = 2 if precision == "FP16" else 4
 
-        batch_size = st.number_input(
+        concurrent_users = st.number_input(
             "Concurrent Users",
             min_value=1,
-            max_value=100,
             value=1,
             help="Number of concurrent users (affects KV cache memory)",
-        )
-
-        compute_efficiency = st.slider(
-            "Compute Efficiency",
-            min_value=0.1,
-            max_value=1.0,
-            value=0.5,
-            step=0.05,
-            help="Fraction of peak compute actually achieved (default: 50%)",
         )
 
         memory_overhead = st.slider(
@@ -152,16 +142,16 @@ def main():
                 f"""
                 **Current Configuration:**
                 - Precision: {precision} ({precision_bytes} bytes/param)
-                - Concurrent Users: {batch_size}
-                - Compute Efficiency: {compute_efficiency * 100:.0f}%
+                - Concurrent Users: {concurrent_users}
                 - Memory Overhead: {memory_overhead}x
                 - Latency Bound: {latency_bound_ms if latency_bound_ms else 'None'}
                 
                 **Estimation Method:**
                 - FLOPs-based compute throughput
                 - Memory bandwidth-based throughput
-                - Bottleneck analysis (compute vs memory)
                 - Tensor parallelism for large models
+                
+                **Note:** All performance numbers are estimates based on synthetic benchmarks.
                 """
             )
 
@@ -176,7 +166,7 @@ def main():
 
     with tab1:
         render_recommendations_tab(
-            precision_bytes, batch_size, compute_efficiency, memory_overhead, latency_bound_ms
+            precision_bytes, concurrent_users, memory_overhead, latency_bound_ms
         )
 
 
@@ -403,8 +393,7 @@ def render_gpus_tab():
 
 def render_recommendations_tab(
     precision_bytes: int,
-    batch_size: int,
-    compute_efficiency: float,
+    concurrent_users: int,
     memory_overhead: float,
     latency_bound_ms: Optional[float],
 ):
@@ -427,8 +416,8 @@ def render_recommendations_tab(
                 estimator = SyntheticBenchmarkEstimator(
                     precision_bytes=precision_bytes,
                     memory_overhead_factor=memory_overhead,
-                    compute_efficiency=compute_efficiency,
-                    concurrent_users=batch_size,
+                    compute_efficiency=0.5,  # Fixed default value
+                    concurrent_users=concurrent_users,
                 )
                 recommender = GPURecommender(estimator=estimator, latency_bound_ms=latency_bound_ms)
 
@@ -450,41 +439,37 @@ def display_recommendations(recommendations: List):
     """Display recommendation results in a table and detail view."""
     st.divider()
 
-    # Summary metrics
+    # Summary - show recommendations per model
     st.subheader("📈 Summary")
-    col1, col2, col3, col4 = st.columns(4)
-
-    total_models = len(recommendations)
-    models_with_gpu = sum(1 for r in recommendations if r.recommended_gpu is not None)
-
-    with col1:
-        st.metric("Total Models", total_models)
-    with col2:
-        st.metric("Models with GPU", models_with_gpu)
-    with col3:
-        avg_throughput = (
-            sum(
-                r.performance.tokens_per_second
-                for r in recommendations
-                if r.performance and r.recommended_gpu
-            )
-            / models_with_gpu
-            if models_with_gpu > 0
-            else 0
-        )
-        st.metric("Avg Throughput", f"{avg_throughput:.0f} tok/s")
-    with col4:
-        avg_latency = (
-            sum(
-                r.performance.intertoken_latency_ms
-                for r in recommendations
-                if r.performance and r.recommended_gpu
-            )
-            / models_with_gpu
-            if models_with_gpu > 0
-            else 0
-        )
-        st.metric("Avg Latency", f"{avg_latency:.2f} ms")
+    
+    # Create summary table
+    summary_data = []
+    for rec in recommendations:
+        if rec.recommended_gpu:
+            # Get cost per hour from the GPU
+            cost = None
+            for gpu in st.session_state.gpus:
+                if gpu.name == rec.recommended_gpu:
+                    cost = gpu.cost_per_hour
+                    break
+            
+            summary_row = {
+                "Model": rec.model_name,
+                "Recommended GPU": rec.recommended_gpu,
+                "TP Size": rec.performance.tensor_parallel_size if rec.performance else 1,
+                "Cost ($/hour)": f"${cost:.2f}" if cost else "N/A",
+            }
+        else:
+            summary_row = {
+                "Model": rec.model_name,
+                "Recommended GPU": "No compatible GPU",
+                "TP Size": "N/A",
+                "Cost ($/hour)": "N/A",
+            }
+        summary_data.append(summary_row)
+    
+    summary_df = pd.DataFrame(summary_data)
+    st.dataframe(summary_df, use_container_width=True, hide_index=True)
 
     st.divider()
 
@@ -502,11 +487,6 @@ def display_recommendations(recommendations: List):
             ),
             "Memory (GB)": f"{rec.performance.memory_required_gb:.1f}" if rec.performance else "N/A",
             "Fits": "✅" if rec.performance and rec.performance.fits_in_memory else "❌",
-            "Bottleneck": (
-                "Compute" if rec.performance and rec.performance.compute_bound else "Memory"
-            )
-            if rec.performance
-            else "N/A",
             "TP Size": (
                 rec.performance.tensor_parallel_size if rec.performance else 1
             ),
@@ -517,7 +497,7 @@ def display_recommendations(recommendations: List):
 
     # Filters
     st.subheader("🔍 Filter & Sort")
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
 
     with col1:
         filter_gpu = st.multiselect(
@@ -526,12 +506,6 @@ def display_recommendations(recommendations: List):
             default=df["Recommended GPU"].unique(),
         )
     with col2:
-        filter_bottleneck = st.multiselect(
-            "Filter by Bottleneck",
-            options=df["Bottleneck"].unique(),
-            default=df["Bottleneck"].unique(),
-        )
-    with col3:
         sort_by = st.selectbox(
             "Sort by",
             options=["Model", "Throughput (tok/s)", "Latency (ms)", "Memory (GB)"],
@@ -539,9 +513,7 @@ def display_recommendations(recommendations: List):
         )
 
     # Apply filters
-    filtered_df = df[
-        (df["Recommended GPU"].isin(filter_gpu)) & (df["Bottleneck"].isin(filter_bottleneck))
-    ]
+    filtered_df = df[df["Recommended GPU"].isin(filter_gpu)]
 
     # Apply sorting
     if sort_by != "Model":
@@ -578,7 +550,7 @@ def display_recommendations(recommendations: List):
                     )
                 with col3:
                     st.metric(
-                        "Memory Used", f"{rec.performance.memory_required_gb:.1f} GB"
+                        "Memory Used per GPU", f"{rec.performance.memory_required_gb:.1f} GB"
                     )
                 with col4:
                     st.metric(
@@ -586,21 +558,12 @@ def display_recommendations(recommendations: List):
                     )
 
                 # Memory breakdown
-                st.markdown("**Memory Breakdown:**")
+                st.markdown("**Memory Breakdown (per GPU):**")
                 mem_col1, mem_col2 = st.columns(2)
                 with mem_col1:
                     st.write(f"- Weights: {rec.performance.memory_weights_gb:.2f} GB")
                 with mem_col2:
                     st.write(f"- KV Cache: {rec.performance.memory_kv_cache_gb:.2f} GB")
-
-                # Bottleneck analysis
-                st.markdown("**Bottleneck Analysis:**")
-                if rec.performance.compute_bound:
-                    st.info("🔢 **Compute-bound**: Performance limited by GPU compute (FLOPs)")
-                else:
-                    st.info(
-                        "💾 **Memory-bound**: Performance limited by memory bandwidth"
-                    )
 
                 # All compatible GPUs
                 if rec.all_compatible_gpus:

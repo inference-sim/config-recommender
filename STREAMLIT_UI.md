@@ -86,28 +86,28 @@ Configure estimation parameters in the sidebar:
 
 - **Precision**: FP16 or FP32 (affects memory and bandwidth requirements)
 - **Concurrent Users**: Number of simultaneous requests (affects KV cache)
-- **Compute Efficiency**: Fraction of peak compute achieved (default: 50%)
 - **Memory Overhead**: Memory overhead factor (default: 1.2x)
 - **Max Latency**: Optional latency constraint (ms/token)
+
+**Note:** All performance numbers are estimates based on synthetic benchmarks.
 
 ### 4. **Recommendations** 📊
 
 The Recommendations tab displays:
 
-**Summary Metrics:**
-- Total models analyzed
-- Models with compatible GPUs
-- Average throughput and latency
+**Summary Table:**
+- GPU recommended for each model
+- Tensor parallelism (TP) size
+- Cost per hour
 
 **Interactive Table:**
 - Sortable and filterable results
-- Filter by GPU type and bottleneck
+- Filter by GPU type
 - Sort by throughput, latency, or memory
 
 **Detailed Results:**
 - Per-model performance metrics
-- Memory breakdown (weights, KV cache)
-- Bottleneck analysis (compute vs memory-bound)
+- Memory breakdown per GPU (weights, KV cache)
 - List of all compatible GPUs
 - Reasoning explanation
 
