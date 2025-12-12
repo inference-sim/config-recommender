@@ -44,7 +44,7 @@ Examples:
 
   # With latency constraint and custom parameters
   config-recommender --models examples/models.json --gpus examples/gpus.json \\
-      --latency-bound 10 --batch-size 1 --precision fp16
+      --latency-bound 10 --precision fp16
 
   # With concurrent users (for multi-user server scenarios)
   config-recommender --models examples/models.json --gpus examples/gpus.json \\
@@ -72,13 +72,6 @@ Examples:
         "--latency-bound",
         type=float,
         help="Maximum acceptable latency per token in milliseconds",
-    )
-
-    parser.add_argument(
-        "--batch-size",
-        type=int,
-        default=1,
-        help="Batch size for inference (default: 1)",
     )
 
     parser.add_argument(
@@ -120,7 +113,6 @@ Examples:
         # Use concurrent_users for KV cache calculations (accounts for multiple concurrent requests)
         precision_bytes = 2 if args.precision == "fp16" else 4
         estimator = SyntheticBenchmarkEstimator(
-            batch_size=args.batch_size,
             precision_bytes=precision_bytes,
             concurrent_users=args.concurrent_users,
         )
@@ -142,7 +134,6 @@ Examples:
         output_data = {
             "recommendations": [result.to_dict() for result in results],
             "parameters": {
-                "batch_size": args.batch_size,
                 "precision": args.precision,
                 "latency_bound_ms": args.latency_bound,
                 "sequence_length": args.sequence_length,

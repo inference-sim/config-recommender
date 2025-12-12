@@ -119,7 +119,6 @@ def main():
     print("\n### Example 3: FP32 Precision (vs default FP16) ###\n")
 
     estimator_fp32 = SyntheticBenchmarkEstimator(
-        batch_size=1,
         precision_bytes=4,  # FP32
         compute_efficiency=0.5,
     )
