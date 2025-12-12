@@ -66,6 +66,7 @@ class SyntheticBenchmarkEstimator:
         precision_bytes: int = 2,  # FP16 = 2 bytes, FP32 = 4 bytes
         memory_overhead_factor: float = 1.2,  # 20% overhead for fragmentation, etc.
         compute_efficiency: float = 0.5,  # Utilization efficiency (50% of peak)
+        concurrent_users: int = 1,  # Number of concurrent users
     ):
         """Initialize the estimator.
 
@@ -74,11 +75,13 @@ class SyntheticBenchmarkEstimator:
             precision_bytes: Bytes per parameter (2 for FP16, 4 for FP32)
             memory_overhead_factor: Multiplier for memory overhead
             compute_efficiency: Fraction of peak compute actually achieved
+            concurrent_users: Number of concurrent users hitting the server
         """
         self.batch_size = batch_size
         self.precision_bytes = precision_bytes
         self.memory_overhead_factor = memory_overhead_factor
         self.compute_efficiency = compute_efficiency
+        self.concurrent_users = concurrent_users
 
     def estimate_memory_weights(self, model: ModelArchitecture) -> float:
         """Estimate memory required for model weights in GB.
@@ -97,16 +100,18 @@ class SyntheticBenchmarkEstimator:
         """Estimate memory required for KV cache in GB.
 
         Uses config_explorer library for HF models, or falls back to calculation.
+        Accounts for concurrent users - each user maintains their own KV cache.
 
         Args:
             model: Model architecture
             sequence_length: Sequence length to cache
 
         Returns:
-            Memory required in GB
+            Memory required in GB (total across all concurrent users)
         """
         # ModelArchitecture handles both HF and manual modes internally
-        return model.get_kv_cache_gb(sequence_length, self.batch_size)
+        # Each concurrent user maintains their own KV cache
+        return model.get_kv_cache_gb(sequence_length, self.batch_size) * self.concurrent_users
 
     def estimate_memory_activation(self, model: ModelArchitecture) -> float:
         """Estimate memory required for activations in GB.
