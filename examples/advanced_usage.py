@@ -120,7 +120,6 @@ def main():
 
     estimator_fp32 = SyntheticBenchmarkEstimator(
         precision_bytes=4,  # FP32
-        compute_efficiency=0.5,
     )
     recommender_fp32 = GPURecommender(estimator=estimator_fp32)
 

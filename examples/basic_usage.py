@@ -61,9 +61,6 @@ def main():
         print(f"  Memory Usage: {result.performance.memory_required_gb:.2f} GB")
         print(f"    - Weights: {result.performance.memory_weights_gb:.2f} GB")
         print(f"    - KV Cache: {result.performance.memory_kv_cache_gb:.2f} GB")
-        print(
-            f"  Bottleneck: {'Compute' if result.performance.compute_bound else 'Memory Bandwidth'}"
-        )
 
     print(f"\nReasoning: {result.reasoning}")
 

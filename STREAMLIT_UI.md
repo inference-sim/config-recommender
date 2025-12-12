@@ -18,7 +18,7 @@ pip install -e .
 
 ```bash
 # Start the Streamlit application
-streamlit run streamlit_app.py
+streamlit run ui.py
 
 # The application will open in your browser at http://localhost:8501
 ```
@@ -26,7 +26,7 @@ streamlit run streamlit_app.py
 ### Alternative: Using a specific port
 
 ```bash
-streamlit run streamlit_app.py --server.port 8502
+streamlit run ui.py --server.port 8502
 ```
 
 ## Features
@@ -152,7 +152,7 @@ If a model fails to load:
 
 If port 8501 is already in use:
 ```bash
-streamlit run streamlit_app.py --server.port 8502
+streamlit run ui.py --server.port 8502
 ```
 
 ### Page Doesn't Load
@@ -170,12 +170,12 @@ streamlit run streamlit_app.py --server.port 8502
 export HF_TOKEN=your_token_here
 
 # Run with custom configuration
-streamlit run streamlit_app.py --server.headless true --server.port 8080
+streamlit run ui.py --server.headless true --server.port 8080
 ```
 
 ### Custom Styling
 
-The UI includes custom CSS for improved aesthetics. Modify the CSS in `streamlit_app.py` to customize appearance.
+The UI includes custom CSS for improved aesthetics. Modify the CSS in `ui.py` to customize appearance.
 
 ## Screenshots
 

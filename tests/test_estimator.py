@@ -157,22 +157,6 @@ def test_estimate_performance_does_not_fit(large_model, low_end_gpu):
     assert perf.intertoken_latency_ms == float("inf")
     assert perf.memory_required_gb > low_end_gpu.memory_gb
 
-
-def test_compute_vs_memory_bound(small_model, high_end_gpu, low_end_gpu):
-    """Test compute vs memory bound detection."""
-    estimator = SyntheticBenchmarkEstimator()
-
-    # High-end GPU should be more likely compute-bound
-    perf_high = estimator.estimate_performance(small_model, high_end_gpu)
-
-    # Low-end GPU with lower memory bandwidth might be memory-bound
-    perf_low = estimator.estimate_performance(small_model, low_end_gpu)
-
-    # At least verify the field exists and is boolean
-    assert isinstance(perf_high.compute_bound, bool)
-    assert isinstance(perf_low.compute_bound, bool)
-
-
 def test_performance_with_custom_sequence_length(small_model, high_end_gpu):
     """Test performance estimation with custom sequence length."""
     estimator = SyntheticBenchmarkEstimator()

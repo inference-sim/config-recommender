@@ -58,20 +58,18 @@ def test_estimator_configuration():
     estimator = SyntheticBenchmarkEstimator(
         precision_bytes=2,
         memory_overhead_factor=1.2,
-        compute_efficiency=0.5,
         concurrent_users=1,
     )
 
     assert estimator.precision_bytes == 2
     assert estimator.memory_overhead_factor == 1.2
-    assert estimator.compute_efficiency == 0.5
     assert estimator.concurrent_users == 1
 
 
 def test_recommendations_generation(sample_models, sample_gpus):
     """Test that recommendations can be generated successfully."""
     estimator = SyntheticBenchmarkEstimator(
-        precision_bytes=2, memory_overhead_factor=1.2, compute_efficiency=0.5, concurrent_users=1
+        precision_bytes=2, memory_overhead_factor=1.2, concurrent_users=1
     )
     recommender = GPURecommender(estimator=estimator)
 
@@ -87,7 +85,7 @@ def test_recommendations_generation(sample_models, sample_gpus):
 def test_recommendations_with_latency_bound(sample_models, sample_gpus):
     """Test recommendations with latency constraint."""
     estimator = SyntheticBenchmarkEstimator(
-        precision_bytes=2, memory_overhead_factor=1.2, compute_efficiency=0.5, concurrent_users=1
+        precision_bytes=2, memory_overhead_factor=1.2, concurrent_users=1
     )
     recommender = GPURecommender(estimator=estimator, latency_bound_ms=10.0)
 
@@ -154,11 +152,6 @@ def test_export_to_dataframe(sample_models, sample_gpus):
             ),
             "Memory (GB)": f"{rec.performance.memory_required_gb:.1f}" if rec.performance else "N/A",
             "Fits": "✅" if rec.performance and rec.performance.fits_in_memory else "❌",
-            "Bottleneck": (
-                "Compute" if rec.performance and rec.performance.compute_bound else "Memory"
-            )
-            if rec.performance
-            else "N/A",
         }
         table_data.append(row)
 

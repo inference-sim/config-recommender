@@ -38,7 +38,6 @@ class PerformanceEstimate:
         memory_weights_gb: Memory for model weights in GB (per GPU)
         memory_kv_cache_gb: Memory for KV cache in GB (per GPU)
         fits_in_memory: Whether the model fits in GPU memory
-        compute_bound: Whether inference is compute-bound vs memory-bound
         tensor_parallel_size: Number of GPUs for tensor parallelism
             (1 for single GPU)
     """
@@ -49,7 +48,6 @@ class PerformanceEstimate:
     memory_weights_gb: float
     memory_kv_cache_gb: float
     fits_in_memory: bool
-    compute_bound: bool
     tensor_parallel_size: int = 1
 
 
@@ -64,7 +62,6 @@ class SyntheticBenchmarkEstimator:
         self,
         precision_bytes: int = 2,  # FP16 = 2 bytes, FP32 = 4 bytes
         memory_overhead_factor: float = 1.2,  # 20% overhead for fragmentation, etc.
-        compute_efficiency: float = 0.5,  # Utilization efficiency (50% of peak)
         concurrent_users: int = 1,  # Number of concurrent users hitting the server at once (affects KV cache memory requirements)
     ):
         """Initialize the estimator.
@@ -72,12 +69,10 @@ class SyntheticBenchmarkEstimator:
         Args:
             precision_bytes: Bytes per parameter (2 for FP16, 4 for FP32)
             memory_overhead_factor: Multiplier for memory overhead
-            compute_efficiency: Fraction of peak compute actually achieved
             concurrent_users: Number of concurrent users hitting the server at once (affects KV cache memory requirements)
         """
         self.precision_bytes = precision_bytes
         self.memory_overhead_factor = memory_overhead_factor
-        self.compute_efficiency = compute_efficiency
         self.concurrent_users = concurrent_users
 
     def estimate_memory_weights(self, model: ModelArchitecture) -> float:
@@ -236,7 +231,7 @@ class SyntheticBenchmarkEstimator:
         # Use FP16 TFLOPs for performance (assuming FP16 inference)
         # With TP, compute is distributed across GPUs
         peak_flops = gpu.tflops_fp16 * 1e12 * tensor_parallel_size  # Total compute across all GPUs
-        effective_flops = peak_flops * self.compute_efficiency
+        effective_flops = peak_flops
 
         # Compute-bound throughput
         compute_tokens_per_second = effective_flops / flops_per_token
@@ -257,7 +252,6 @@ class SyntheticBenchmarkEstimator:
 
         # Actual throughput is limited by the bottleneck
         tokens_per_second = min(compute_tokens_per_second, memory_tokens_per_second)
-        compute_bound = compute_tokens_per_second < memory_tokens_per_second
 
         # Apply TP communication overhead (reduces throughput)
         if tensor_parallel_size > 1:
@@ -280,6 +274,5 @@ class SyntheticBenchmarkEstimator:
             memory_weights_gb=weights_per_gpu,
             memory_kv_cache_gb=kv_cache_per_gpu,
             fits_in_memory=fits_in_memory,
-            compute_bound=compute_bound,
             tensor_parallel_size=tensor_parallel_size,
         )
