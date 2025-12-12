@@ -53,6 +53,25 @@ The project uses modern Python packaging with `pyproject.toml`. Dependencies are
 
 ## Quick Start
 
+### Streamlit Web UI (Recommended)
+
+The easiest way to use the GPU Recommendation Engine is through the interactive web UI:
+
+```bash
+# Run the Streamlit UI
+streamlit run streamlit_app.py
+
+# The UI will open in your browser at http://localhost:8501
+```
+
+**Features:**
+- 📝 Add models and GPUs via forms or JSON upload
+- ⚙️ Configure performance parameters (precision, batch size, latency bounds)
+- 📊 View recommendations in sortable, filterable tables
+- 🔍 Detailed per-model breakdown (memory, FLOPs, bottleneck)
+- 💾 Export results to JSON or CSV
+- ♿ Accessible and responsive design
+
 ### Command-Line Interface
 
 ```bash
