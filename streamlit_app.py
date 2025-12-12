@@ -429,7 +429,6 @@ def render_recommendations_tab(
                 estimator = SyntheticBenchmarkEstimator(
                     precision_bytes=precision_bytes,
                     memory_overhead_factor=memory_overhead,
-                    compute_efficiency=0.5,  # Fixed default value
                     concurrent_users=concurrent_users,
                 )
                 recommender = GPURecommender(estimator=estimator, latency_bound_ms=latency_bound_ms)
