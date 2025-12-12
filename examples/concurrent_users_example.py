@@ -73,9 +73,10 @@ def main():
             tp_size = result.performance.tensor_parallel_size
 
             # Calculate total cost
-            total_cost = (
-                result.all_compatible_gpus[0].get("cost_per_hour", 0) * tp_size
-            )
+            cost_per_hour = 0
+            if result.all_compatible_gpus:
+                cost_per_hour = result.all_compatible_gpus[0].get("cost_per_hour", 0)
+            total_cost = cost_per_hour * tp_size
 
             print(f"\nRecommendation:")
             if tp_size > 1:
@@ -106,14 +107,18 @@ def main():
 
             print(f"\nCost:")
             if tp_size > 1:
-                print(
-                    f"  Per GPU:  ${result.all_compatible_gpus[0].get('cost_per_hour', 0):.2f}/hour"
-                )
-                print(f"  Total:    ${total_cost:.2f}/hour ({tp_size} GPUs)")
+                if result.all_compatible_gpus:
+                    cost_per_hour = result.all_compatible_gpus[0].get('cost_per_hour', 0)
+                    print(f"  Per GPU:  ${cost_per_hour:.2f}/hour")
+                    print(f"  Total:    ${cost_per_hour * tp_size:.2f}/hour ({tp_size} GPUs)")
+                else:
+                    print(f"  Total:    ${total_cost:.2f}/hour ({tp_size} GPUs)")
             else:
-                print(
-                    f"  ${result.all_compatible_gpus[0].get('cost_per_hour', 0):.2f}/hour"
-                )
+                if result.all_compatible_gpus:
+                    cost_per_hour = result.all_compatible_gpus[0].get('cost_per_hour', 0)
+                    print(f"  ${cost_per_hour:.2f}/hour")
+                else:
+                    print(f"  ${total_cost:.2f}/hour")
         else:
             print("\n⚠️  No compatible GPU found for this configuration!")
 

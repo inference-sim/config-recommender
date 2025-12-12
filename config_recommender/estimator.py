@@ -107,7 +107,9 @@ class SyntheticBenchmarkEstimator:
             sequence_length: Sequence length to cache
 
         Returns:
-            Memory required in GB (total across all concurrent users)
+            Memory required in GB for KV cache accounting for all concurrent users.
+            Note: When used with tensor parallelism, this value will be divided
+            across GPUs (same as model weights).
         """
         # ModelArchitecture handles both HF and manual modes internally
         # Each concurrent user maintains their own KV cache
