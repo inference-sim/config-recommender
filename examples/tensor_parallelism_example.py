@@ -12,7 +12,7 @@ def main():
         name="mistralai/Mixtral-8x7B-v0.1",
     )
 
-    # Define available GPUs
+    # Define available GPUs - using different GPU types to demonstrate TP behavior
     gpus = [
         GPUSpec(
             name="NVIDIA H100 80GB",
@@ -29,6 +29,14 @@ def main():
             tflops_fp16=312.0,
             tflops_fp32=156.0,
             cost_per_hour=3.67,
+        ),
+        GPUSpec(
+            name="NVIDIA A100 40GB",
+            memory_gb=40.0,
+            memory_bandwidth_gb_s=1555.0,
+            tflops_fp16=312.0,
+            tflops_fp32=156.0,
+            cost_per_hour=2.93,
         ),
     ]
 
@@ -69,13 +77,14 @@ def main():
             f"  Inter-token Latency: {result.performance.intertoken_latency_ms:.2f} ms/token"
         )
         print(
-            f"  Memory per GPU: {result.performance.memory_required_gb:.2f} GB / {gpus[0].memory_gb:.2f} GB"
+            f"  Memory per GPU: {result.performance.memory_required_gb:.2f} GB / "
+            f"{gpus[0].memory_gb:.2f} GB"
         )
 
     print(f"\nReasoning: {result.reasoning}")
 
     print(f"\nAll Compatible TP Configurations ({len(result.all_compatible_gpus)}):")
-    for i, gpu_info in enumerate(result.all_compatible_gpus[:5], 1):  # Show top 5
+    for i, gpu_info in enumerate(result.all_compatible_gpus[:8], 1):  # Show top 8
         tp = gpu_info.get("tensor_parallel_size", 1)
         print(f"\n  {i}. {tp}x {gpu_info['gpu_name']} (TP={tp})")
         print(f"     Throughput: {gpu_info['tokens_per_second']:.2f} tokens/sec")
@@ -83,13 +92,17 @@ def main():
             f"     Inter-token Latency: {gpu_info['intertoken_latency_ms']:.2f} ms/token"
         )
         print(
-            f"     Memory per GPU: {gpu_info['memory_required_gb']:.2f} GB / {gpu_info['memory_available_gb']:.2f} GB"
+            f"     Memory per GPU: {gpu_info['memory_required_gb']:.2f} GB / "
+            f"{gpu_info['memory_available_gb']:.2f} GB"
         )
         print(f"     Total Cost: ${gpu_info['cost_per_hour'] * tp:.2f}/hour")
 
     print("\n" + "=" * 80)
     print("\nKey Insights:")
     print("- Tensor Parallelism (TP) splits the model across multiple GPUs")
+    print("- A100 40GB requires higher TP (more GPUs) to fit the model compared to 80GB variants")
+    print("- H100 achieves better performance than A100 due to higher compute and bandwidth")
+    print("- A100 80GB offers lower cost alternative when performance is less critical")
     print("- Higher TP values use more GPUs but can achieve better throughput")
     print("- However, TP introduces communication overhead between GPUs")
     print("- The tool evaluates TP values of 2, 4, and 8 to find the best option")

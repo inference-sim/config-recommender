@@ -132,14 +132,14 @@ def test_recommend_best_tp_value(very_large_model, h100_gpu):
 
 
 def test_tp_values_in_range(very_large_model, h100_gpu):
-    """Test that TP values are from capacity_planner and within reasonable range."""
+    """Test that TP values are from capacity_planner."""
     recommender = GPURecommender()
     result = recommender.recommend_gpu(very_large_model, [h100_gpu])
 
-    # All TP values should be > 1 (since single GPU doesn't fit) and <= 16
+    # All TP values should be > 1 (since single GPU doesn't fit)
     for config in result.all_compatible_gpus:
         tp_size = config.get("tensor_parallel_size", 1)
-        assert 1 < tp_size <= 16, f"TP size {tp_size} outside reasonable range"
+        assert tp_size > 1, f"TP size {tp_size} should be greater than 1"
 
 
 def test_model_fits_single_gpu_no_tp(h100_gpu):

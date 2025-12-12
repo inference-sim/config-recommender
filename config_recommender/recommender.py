@@ -113,8 +113,8 @@ class GPURecommender:
             if model._model_config is not None:
                 # Get TP sizes from capacity planner (excludes 1 since we already tried it)
                 all_tp_sizes = find_possible_tp(model._model_config)
-                # Filter to reasonable TP sizes (2-16) to avoid excessive overhead
-                tp_sizes_to_try = [tp for tp in all_tp_sizes if 1 < tp <= 16]
+                # Use all TP sizes from capacity planner
+                tp_sizes_to_try = [tp for tp in all_tp_sizes if tp > 1]
             else:
                 # Fallback to default range if model config not available
                 tp_sizes_to_try = [2, 4, 8]
