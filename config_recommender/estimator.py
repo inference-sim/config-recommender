@@ -66,7 +66,7 @@ class SyntheticBenchmarkEstimator:
         precision_bytes: int = 2,  # FP16 = 2 bytes, FP32 = 4 bytes
         memory_overhead_factor: float = 1.2,  # 20% overhead for fragmentation, etc.
         compute_efficiency: float = 0.5,  # Utilization efficiency (50% of peak)
-        concurrent_users: int = 1,  # Number of concurrent users for KV cache calculation
+        concurrent_users: int = 1,  # Number of concurrent users hitting the server at once (affects KV cache memory requirements)
     ):
         """Initialize the estimator.
 
@@ -75,7 +75,7 @@ class SyntheticBenchmarkEstimator:
             precision_bytes: Bytes per parameter (2 for FP16, 4 for FP32)
             memory_overhead_factor: Multiplier for memory overhead
             compute_efficiency: Fraction of peak compute actually achieved
-            concurrent_users: Number of concurrent users hitting the server at once
+            concurrent_users: Number of concurrent users hitting the server at once (affects KV cache memory requirements)
         """
         self.batch_size = batch_size
         self.precision_bytes = precision_bytes

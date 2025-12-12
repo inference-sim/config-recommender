@@ -159,16 +159,12 @@ def test_concurrent_users_may_require_tensor_parallelism(test_model):
     recommender_100 = GPURecommender(estimator=estimator_100)
     result_100 = recommender_100.recommend_gpu(test_model, [small_gpu], sequence_length=2048)
     
-    # With low concurrent users, should fit (possibly with or without TP)
-    # With high concurrent users, may need higher TP or may not fit at all
-    # The key is that memory requirements increased
+    # With low concurrent users, should have lower or equal TP size compared to high concurrent users
+    # The key is that higher concurrent users leads to higher memory requirements
     if result_1.performance and result_100.performance:
-        # If both fit, the one with more users should use more TP or more memory
+        # If both fit, high concurrent users should require higher or equal TP
         if result_1.performance.fits_in_memory and result_100.performance.fits_in_memory:
-            assert (
-                result_100.performance.tensor_parallel_size >= result_1.performance.tensor_parallel_size
-                or not result_100.performance.fits_in_memory
-            )
+            assert result_100.performance.tensor_parallel_size >= result_1.performance.tensor_parallel_size
 
 
 def test_concurrent_users_batch_size_independence(test_model):
