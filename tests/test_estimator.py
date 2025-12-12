@@ -62,8 +62,8 @@ def low_end_gpu():
 def test_estimator_initialization():
     """Test estimator initialization."""
     estimator = SyntheticBenchmarkEstimator()
-    assert estimator.batch_size == 1
     assert estimator.precision_bytes == 2
+    assert estimator.concurrent_users == 1
 
     estimator_fp32 = SyntheticBenchmarkEstimator(precision_bytes=4)
     assert estimator_fp32.precision_bytes == 4
@@ -91,7 +91,7 @@ def test_estimate_memory_weights_fp32(small_model):
 
 def test_estimate_memory_kv_cache(small_model):
     """Test KV cache memory estimation."""
-    estimator = SyntheticBenchmarkEstimator(batch_size=1, precision_bytes=2)
+    estimator = SyntheticBenchmarkEstimator(precision_bytes=2)
     kv_cache_gb = estimator.estimate_memory_kv_cache(small_model, sequence_length=2048)
 
     # Should be non-zero and reasonable
@@ -101,7 +101,7 @@ def test_estimate_memory_kv_cache(small_model):
 
 def test_estimate_memory_kv_cache_with_gqa(large_model):
     """Test KV cache with Grouped Query Attention."""
-    estimator = SyntheticBenchmarkEstimator(batch_size=1, precision_bytes=2)
+    estimator = SyntheticBenchmarkEstimator(precision_bytes=2)
     kv_cache_gb = estimator.estimate_memory_kv_cache(large_model, sequence_length=4096)
 
     # With GQA (8 KV heads vs 64 attention heads), KV cache should be smaller
