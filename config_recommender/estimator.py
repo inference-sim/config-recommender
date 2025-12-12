@@ -111,9 +111,10 @@ class SyntheticBenchmarkEstimator:
             Note: When used with tensor parallelism, this value will be divided
             across GPUs (same as model weights).
         """
-        # ModelArchitecture handles both HF and manual modes internally
+        # Pass concurrent_users directly as batch_size to capacity_planner's kv_cache_req
         # Each concurrent user maintains their own KV cache
-        return model.get_kv_cache_gb(sequence_length, self.batch_size) * self.concurrent_users
+        effective_batch_size = self.batch_size * self.concurrent_users
+        return model.get_kv_cache_gb(sequence_length, effective_batch_size)
 
     def estimate_memory_activation(self, model: ModelArchitecture) -> float:
         """Estimate memory required for activations in GB.
