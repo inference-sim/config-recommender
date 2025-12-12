@@ -46,6 +46,10 @@ Examples:
   config-recommender --models examples/models.json --gpus examples/gpus.json \\
       --latency-bound 10 --batch-size 1 --precision fp16
 
+  # With concurrent users (for multi-user server scenarios)
+  config-recommender --models examples/models.json --gpus examples/gpus.json \\
+      --concurrent-users 10
+
   # Output to file
   config-recommender --models examples/models.json --gpus examples/gpus.json \\
       --output recommendations.json
@@ -90,6 +94,13 @@ Examples:
         help="Sequence length (default: use model max_sequence_length)",
     )
 
+    parser.add_argument(
+        "--concurrent-users",
+        type=int,
+        default=1,
+        help="Number of concurrent users hitting the server at once (default: 1)",
+    )
+
     args = parser.parse_args()
 
     try:
@@ -106,10 +117,12 @@ Examples:
             sys.exit(1)
 
         # Create estimator (using default compute_efficiency of 0.5)
+        # Use concurrent_users for KV cache calculations (accounts for multiple concurrent requests)
         precision_bytes = 2 if args.precision == "fp16" else 4
         estimator = SyntheticBenchmarkEstimator(
             batch_size=args.batch_size,
             precision_bytes=precision_bytes,
+            concurrent_users=args.concurrent_users,
         )
 
         # Create recommender
@@ -133,6 +146,7 @@ Examples:
                 "precision": args.precision,
                 "latency_bound_ms": args.latency_bound,
                 "sequence_length": args.sequence_length,
+                "concurrent_users": args.concurrent_users,
             },
         }
 

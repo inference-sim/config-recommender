@@ -66,6 +66,7 @@ class SyntheticBenchmarkEstimator:
         precision_bytes: int = 2,  # FP16 = 2 bytes, FP32 = 4 bytes
         memory_overhead_factor: float = 1.2,  # 20% overhead for fragmentation, etc.
         compute_efficiency: float = 0.5,  # Utilization efficiency (50% of peak)
+        concurrent_users: int = 1,  # Number of concurrent users for KV cache calculation
     ):
         """Initialize the estimator.
 
@@ -74,11 +75,13 @@ class SyntheticBenchmarkEstimator:
             precision_bytes: Bytes per parameter (2 for FP16, 4 for FP32)
             memory_overhead_factor: Multiplier for memory overhead
             compute_efficiency: Fraction of peak compute actually achieved
+            concurrent_users: Number of concurrent users hitting the server at once
         """
         self.batch_size = batch_size
         self.precision_bytes = precision_bytes
         self.memory_overhead_factor = memory_overhead_factor
         self.compute_efficiency = compute_efficiency
+        self.concurrent_users = concurrent_users
 
     def estimate_memory_weights(self, model: ModelArchitecture) -> float:
         """Estimate memory required for model weights in GB.
@@ -97,6 +100,7 @@ class SyntheticBenchmarkEstimator:
         """Estimate memory required for KV cache in GB.
 
         Uses config_explorer library for HF models, or falls back to calculation.
+        Uses concurrent_users to account for multiple concurrent requests hitting the server.
 
         Args:
             model: Model architecture
@@ -106,13 +110,15 @@ class SyntheticBenchmarkEstimator:
             Memory required in GB
         """
         # ModelArchitecture handles both HF and manual modes internally
-        return model.get_kv_cache_gb(sequence_length, self.batch_size)
+        # Use concurrent_users as batch_size for KV cache to account for concurrent requests
+        return model.get_kv_cache_gb(sequence_length, self.concurrent_users)
 
     def estimate_memory_activation(self, model: ModelArchitecture) -> float:
         """Estimate memory required for activations in GB.
 
         This is a rough estimate based on batch size and model size.
         Activations scale with batch_size * sequence_length * hidden_size.
+        Uses concurrent_users to account for multiple concurrent requests.
 
         Args:
             model: Model architecture
@@ -121,10 +127,10 @@ class SyntheticBenchmarkEstimator:
             Memory required in GB
         """
         # Try to get accurate KV cache detail from HF
-        kv_detail = model.get_kv_cache_detail(model.get_max_sequence_length(), self.batch_size)
+        kv_detail = model.get_kv_cache_detail(model.get_max_sequence_length(), self.concurrent_users)
         if kv_detail:
             activation_elements = (
-                self.batch_size
+                self.concurrent_users
                 * model.get_max_sequence_length()
                 * kv_detail.hidden_size
                 * kv_detail.num_hidden_layers
@@ -137,7 +143,7 @@ class SyntheticBenchmarkEstimator:
         # Fallback to manual calculation
         if model.hidden_size and model.num_layers:
             activation_elements = (
-                self.batch_size
+                self.concurrent_users
                 * model.get_max_sequence_length()
                 * model.hidden_size
                 * model.num_layers
