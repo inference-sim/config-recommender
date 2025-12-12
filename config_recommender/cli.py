@@ -154,9 +154,32 @@ Examples:
         )
         for result in results:
             if result.recommended_gpu:
-                print(
-                    f"  {result.model_name}: {result.recommended_gpu}", file=sys.stderr
-                )
+                # Include TP size if using tensor parallelism
+                if result.performance and result.performance.tensor_parallel_size > 1:
+                    tp_size = result.performance.tensor_parallel_size
+                    # Get cost from compatible GPUs
+                    cost_info = ""
+                    if result.all_compatible_gpus:
+                        cost_per_hour = result.all_compatible_gpus[0].get("cost_per_hour")
+                        if cost_per_hour is not None:
+                            total_cost = cost_per_hour * tp_size
+                            cost_info = f" (${total_cost:.2f}/hr)"
+                    print(
+                        f"  {result.model_name}: {tp_size}x{result.recommended_gpu} "
+                        f"(TP={tp_size}){cost_info}",
+                        file=sys.stderr,
+                    )
+                else:
+                    # Get cost for single GPU
+                    cost_info = ""
+                    if result.all_compatible_gpus:
+                        cost_per_hour = result.all_compatible_gpus[0].get("cost_per_hour")
+                        if cost_per_hour is not None:
+                            cost_info = f" (${cost_per_hour:.2f}/hr)"
+                    print(
+                        f"  {result.model_name}: {result.recommended_gpu}{cost_info}",
+                        file=sys.stderr,
+                    )
             else:
                 print(f"  {result.model_name}: No compatible GPU", file=sys.stderr)
 
