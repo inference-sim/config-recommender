@@ -108,6 +108,10 @@ config-recommender --models examples/models.json --gpus examples/gpus.json
 config-recommender --models examples/models.json --gpus examples/gpus.json \
     --latency-bound 10
 
+# With concurrent users (accounts for multiple users hitting the server)
+config-recommender --models examples/models.json --gpus examples/gpus.json \
+    --concurrent-users 10
+
 # Save output to file
 config-recommender --models examples/models.json --gpus examples/gpus.json \
     --output recommendations.json
@@ -135,6 +139,7 @@ The recommendation engine estimates performance using:
 1. **Memory Requirements** (via config_explorer):
    - **Weights**: Accurate model size from HuggingFace safetensors
    - **KV Cache**: Precise calculation accounting for attention type (MHA/GQA/MQA/MLA)
+     - Scales linearly with `--concurrent-users` (each user maintains their own KV cache)
    - **Activations** (WIP): Estimated based on batch size, sequence length, and hidden dimensions
 
 2. **Performance Estimation**:
@@ -147,6 +152,19 @@ The recommendation engine estimates performance using:
    - Apply latency constraints if specified
    - Select GPU with highest tokens/sec
    - Use cost as tiebreaker when available
+   - Automatically enables tensor parallelism when needed for memory constraints
+
+### Concurrent Users Support
+
+The `--concurrent-users` parameter accounts for multiple users hitting the inference server simultaneously:
+
+- **Default**: 1 user (single-user scenario)
+- **Effect**: Each concurrent user maintains their own KV cache in GPU memory
+- **Memory scaling**: KV cache memory = base_kv_cache × concurrent_users
+- **Impact**: Higher concurrent users → larger memory requirements → may trigger tensor parallelism
+- **Example**: A model requiring 20GB for 1 user will need ~60GB for 3 concurrent users
+
+See `examples/concurrent_users_example.py` for a detailed demonstration.
 
 ### Architecture
 
@@ -238,6 +256,11 @@ pytest tests/test_recommender.py
 See the `examples/` directory for sample model and GPU configuration files:
 - `examples/models.json`: Sample model architectures (Llama-2, Mistral)
 - `examples/gpus.json`: Sample GPU specifications (A100, H100, V100, T4, L4)
+- `examples/basic_usage.py`: Basic GPU recommendation example
+- `examples/concurrent_users_example.py`: Demonstrates concurrent users impact on recommendations
+- `examples/tensor_parallelism_example.py`: Tensor parallelism examples
+- `examples/advanced_usage.py`: Advanced usage patterns
+- `examples/json_workflow.py`: JSON-based workflow
 
 ## Contributing
 
