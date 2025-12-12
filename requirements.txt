@@ -1,2 +1,4 @@
 # Core dependencies
 config_explorer @ git+https://github.com/llm-d/llm-d-benchmark.git#subdirectory=config_explorer
+streamlit>=1.28.0
+pandas>=2.0.0
