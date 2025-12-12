@@ -241,7 +241,7 @@ class GPURecommender:
                 f"{best_gpu.memory_gb:.2f} GB.",
             ]
 
-        reasoning_parts.append("Performance is memory-bandwidth-bound.")
+        reasoning_parts.append("Performance is limited by hardware capabilities.")
 
         if len(compatible_gpus) > 1:
             second_best = compatible_gpus[1]
