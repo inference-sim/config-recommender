@@ -241,10 +241,7 @@ class GPURecommender:
                 f"{best_gpu.memory_gb:.2f} GB.",
             ]
 
-        if best_perf.compute_bound:
-            reasoning_parts.append("Performance is compute-bound.")
-        else:
-            reasoning_parts.append("Performance is memory-bandwidth-bound.")
+        reasoning_parts.append("Performance is limited by hardware capabilities.")
 
         if len(compatible_gpus) > 1:
             second_best = compatible_gpus[1]
@@ -271,7 +268,6 @@ class GPURecommender:
                 "intertoken_latency_ms": eval_data["performance"].intertoken_latency_ms,
                 "memory_required_gb": eval_data["performance"].memory_required_gb,
                 "memory_available_gb": eval_data["gpu"].memory_gb,
-                "compute_bound": eval_data["performance"].compute_bound,
                 "cost_per_hour": eval_data["gpu"].cost_per_hour,
                 "tensor_parallel_size": eval_data["performance"].tensor_parallel_size,
             }

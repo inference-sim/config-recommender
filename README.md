@@ -59,7 +59,7 @@ The easiest way to use the GPU Recommendation Engine is through the interactive 
 
 ```bash
 # Run the Streamlit UI
-streamlit run streamlit_app.py
+streamlit run ui.py
 
 # The UI will open in your browser at http://localhost:8501
 ```
@@ -219,8 +219,7 @@ export HF_TOKEN=your_huggingface_token
         "tokens_per_second": 1234.56,
         "intertoken_latency_ms": 0.81,
         "memory_required_gb": 18.5,
-        "fits_in_memory": true,
-        "compute_bound": true
+        "fits_in_memory": true
       },
       "reasoning": "Selected NVIDIA H100 80GB for mistralai/Mixtral-8x7B-v0.1. Throughput: 1234.56 tokens/sec...",
       "all_compatible_gpus": [...]

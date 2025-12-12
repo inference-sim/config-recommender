@@ -148,8 +148,7 @@ The recommendation engine outputs JSON with the following structure:
         "tokens_per_second": 239.29,
         "latency_ms_per_token": 4.18,
         "memory_required_gb": 24.0,
-        "fits_in_memory": true,
-        "compute_bound": false
+        "fits_in_memory": true
       },
       "reasoning": "Selected NVIDIA H100 80GB for llama-2-7b. Throughput: 239.29 tokens/sec...",
       "all_compatible_gpus": [...]

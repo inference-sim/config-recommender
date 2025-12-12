@@ -109,7 +109,6 @@ Examples:
             print("Error: No GPUs found in input file", file=sys.stderr)
             sys.exit(1)
 
-        # Create estimator (using default compute_efficiency of 0.5)
         # Use concurrent_users for KV cache calculations (accounts for multiple concurrent requests)
         precision_bytes = 2 if args.precision == "fp16" else 4
         estimator = SyntheticBenchmarkEstimator(
