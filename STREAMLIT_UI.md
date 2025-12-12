@@ -126,8 +126,8 @@ The Recommendations tab displays:
 
 ## Accessibility Features
 
-- **Keyboard Navigation**: Full keyboard support for all interactive elements
-- **Screen Reader Support**: ARIA labels and semantic HTML
+- **Keyboard Navigation**: Full keyboard support through Streamlit's built-in accessibility
+- **Semantic HTML**: Streamlit components use semantic HTML elements
 - **Responsive Design**: Works on desktop and tablet devices
 - **Clear Visual Hierarchy**: Organized layout with clear section headers
 

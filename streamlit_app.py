@@ -540,13 +540,14 @@ def display_recommendations(recommendations: List):
 
     # Apply filters
     filtered_df = df[
-        df["Recommended GPU"].isin(filter_gpu) & df["Bottleneck"].isin(filter_bottleneck)
+        (df["Recommended GPU"].isin(filter_gpu)) & (df["Bottleneck"].isin(filter_bottleneck))
     ]
 
     # Apply sorting
     if sort_by != "Model":
-        # Convert to numeric for sorting
+        # Convert to numeric for sorting (make a copy to avoid SettingWithCopyWarning)
         if sort_by in ["Throughput (tok/s)", "Latency (ms)", "Memory (GB)"]:
+            filtered_df = filtered_df.copy()
             filtered_df[sort_by] = pd.to_numeric(
                 filtered_df[sort_by].str.replace("N/A", "0"), errors="coerce"
             )
