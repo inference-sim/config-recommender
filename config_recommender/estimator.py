@@ -240,7 +240,7 @@ class SyntheticBenchmarkEstimator:
 
         # Memory-bandwidth-bound throughput
         # With TP, each GPU reads its portion of weights
-        # Total bandwidth scales with number of GPUs
+        # All GPUs process the same token in parallel, reading from their own memory
         bytes_per_token_per_gpu = (
             model.get_num_parameters()
             * 1e9
@@ -248,10 +248,9 @@ class SyntheticBenchmarkEstimator:
             * MEMORY_READ_FACTOR
             / tensor_parallel_size
         )
-        total_bandwidth = gpu.memory_bandwidth_gb_s * 1e9 * tensor_parallel_size
-        # Total throughput = total bandwidth / bytes per token per GPU
-        # (Each GPU reads bytes_per_token_per_gpu, using its bandwidth)
-        memory_tokens_per_second = total_bandwidth / bytes_per_token_per_gpu
+        # Each GPU reads its portion; they all work on the same token in parallel
+        # Throughput is limited by slowest GPU (all same, so just use one)
+        memory_tokens_per_second = (gpu.memory_bandwidth_gb_s * 1e9) / bytes_per_token_per_gpu
 
         # Actual throughput is limited by the bottleneck
         tokens_per_second = min(compute_tokens_per_second, memory_tokens_per_second)
