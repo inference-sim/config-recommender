@@ -53,6 +53,25 @@ The project uses modern Python packaging with `pyproject.toml`. Dependencies are
 
 ## Quick Start
 
+### Command-Line Interface
+
+```bash
+# Basic usage
+config-recommender --models examples/models.json --gpus examples/gpus.json
+
+# With latency constraint
+config-recommender --models examples/models.json --gpus examples/gpus.json \
+    --latency-bound 10
+
+# Save output to file
+config-recommender --models examples/models.json --gpus examples/gpus.json \
+    --output recommendations.json
+
+# Custom parameters
+config-recommender --models examples/models.json --gpus examples/gpus.json \
+    --batch-size 1 --precision fp16
+```
+
 ### Python API
 
 ```python
@@ -98,25 +117,6 @@ print(f"Latency: {result.performance.intertoken_latency_ms:.2f} ms/token")
 print(f"Reasoning: {result.reasoning}")
 ```
 
-### Command-Line Interface
-
-```bash
-# Basic usage
-config-recommender --models examples/models.json --gpus examples/gpus.json
-
-# With latency constraint
-config-recommender --models examples/models.json --gpus examples/gpus.json \
-    --latency-bound 10
-
-# Save output to file
-config-recommender --models examples/models.json --gpus examples/gpus.json \
-    --output recommendations.json
-
-# Custom parameters
-config-recommender --models examples/models.json --gpus examples/gpus.json \
-    --batch-size 1 --precision fp16
-```
-
 ## How It Works
 
 ### Model Information Fetching
@@ -147,16 +147,6 @@ The recommendation engine estimates performance using:
    - Apply latency constraints if specified
    - Select GPU with highest tokens/sec
    - Use cost as tiebreaker when available
-
-### Architecture
-
-```
-config_recommender/
-├── models.py         # Data models for ModelArchitecture and GPUSpec
-├── estimator.py      # SyntheticBenchmarkEstimator for performance prediction
-├── recommender.py    # GPURecommender with recommendation logic
-└── cli.py           # Command-line interface
-```
 
 ## Input Formats
 
@@ -238,6 +228,9 @@ pytest tests/test_recommender.py
 See the `examples/` directory for sample model and GPU configuration files:
 - `examples/models.json`: Sample model architectures (Llama-2, Mistral)
 - `examples/gpus.json`: Sample GPU specifications (A100, H100, V100, T4, L4)
+- `examples/basic.py`: A simple, basic usage of the Python API, single model recommendation
+- `examples/advanced.py`: An advanced usage, multiple models recommendations
+- `examples/tensor_parallelism_example.py`: Demonstrates a model requiring TP>1
 
 ## Contributing
 
@@ -245,10 +238,6 @@ Contributions are welcome! Please ensure:
 - All tests pass
 - Code follows existing style
 - New features include tests and documentation
-
-## License
-
-MIT License
 
 ## References
 
