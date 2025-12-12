@@ -100,7 +100,7 @@ def main():
             min_value=0,
             value=0,
             step=128,
-            help="Sequence length for KV cache estimation (0 = use each model's max_sequence_length)",
+            help="Total input + output sequence length for KV cache estimation (0 = use each model's max_sequence_length)",
         )
         sequence_length_param = sequence_length if sequence_length > 0 else None
 

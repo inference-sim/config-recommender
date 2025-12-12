@@ -59,7 +59,7 @@ The easiest way to use the GPU Recommendation Engine is through the interactive 
 
 ```bash
 # Run the Streamlit UI
-streamlit run ui.py
+streamlit run streamlit_app.py
 
 # The UI will open in your browser at http://localhost:8501
 ```

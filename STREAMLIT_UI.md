@@ -18,7 +18,7 @@ pip install -e .
 
 ```bash
 # Start the Streamlit application
-streamlit run ui.py
+streamlit run streamlit_app.py
 
 # The application will open in your browser at http://localhost:8501
 ```
@@ -26,7 +26,7 @@ streamlit run ui.py
 ### Alternative: Using a specific port
 
 ```bash
-streamlit run ui.py --server.port 8502
+streamlit run streamlit_app.py --server.port 8502
 ```
 
 ## Features
