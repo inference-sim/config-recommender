@@ -71,6 +71,8 @@ def main():
         st.session_state.gpus = []
     if "recommendations" not in st.session_state:
         st.session_state.recommendations = None
+    if "sequence_length_used" not in st.session_state:
+        st.session_state.sequence_length_used = None
 
     # Sidebar for configuration
     with st.sidebar:
@@ -92,6 +94,15 @@ def main():
             value=1,
             help="Number of concurrent users (affects KV cache memory)",
         )
+
+        sequence_length = st.number_input(
+            "Sequence Length (tokens)",
+            min_value=0,
+            value=0,
+            step=128,
+            help="Total input + output sequence length for KV cache estimation (0 = use each model's max_sequence_length)",
+        )
+        sequence_length_param = sequence_length if sequence_length > 0 else None
 
         memory_overhead = st.slider(
             "Memory Overhead Factor",
@@ -143,6 +154,7 @@ def main():
                 **Current Configuration:**
                 - Precision: {precision} ({precision_bytes} bytes/param)
                 - Concurrent Users: {concurrent_users}
+                - Sequence Length: {sequence_length if sequence_length > 0 else 'Model default (varies)'}
                 - Memory Overhead: {memory_overhead}x
                 - Latency Bound: {latency_bound_ms if latency_bound_ms else 'None'}
                 
@@ -166,7 +178,7 @@ def main():
 
     with tab1:
         render_recommendations_tab(
-            precision_bytes, concurrent_users, memory_overhead, latency_bound_ms
+            precision_bytes, concurrent_users, memory_overhead, latency_bound_ms, sequence_length_param
         )
 
 
@@ -396,6 +408,7 @@ def render_recommendations_tab(
     concurrent_users: int,
     memory_overhead: float,
     latency_bound_ms: Optional[float],
+    sequence_length: Optional[int],
 ):
     """Render the recommendations results tab."""
     st.markdown('<h2 class="section-header">GPU Recommendations</h2>', unsafe_allow_html=True)
@@ -416,15 +429,15 @@ def render_recommendations_tab(
                 estimator = SyntheticBenchmarkEstimator(
                     precision_bytes=precision_bytes,
                     memory_overhead_factor=memory_overhead,
-                    compute_efficiency=0.5,  # Fixed default value
                     concurrent_users=concurrent_users,
                 )
                 recommender = GPURecommender(estimator=estimator, latency_bound_ms=latency_bound_ms)
 
                 results = recommender.recommend_for_models(
-                    st.session_state.models, st.session_state.gpus
+                    st.session_state.models, st.session_state.gpus, sequence_length=sequence_length
                 )
                 st.session_state.recommendations = results
+                st.session_state.sequence_length_used = sequence_length
                 st.success("✅ Recommendations generated!")
             except Exception as e:
                 st.error(f"❌ Error generating recommendations: {str(e)}")
@@ -538,6 +551,19 @@ def display_recommendations(recommendations: List):
     for idx, rec in enumerate(recommendations):
         with st.expander(f"**{rec.model_name}** → {rec.recommended_gpu or 'No compatible GPU'}"):
             if rec.recommended_gpu:
+                # Get the model to show its sequence length
+                model = next((m for m in st.session_state.models if m.name == rec.model_name), None)
+                
+                # Determine sequence length used
+                if st.session_state.sequence_length_used is not None:
+                    seq_len_used = st.session_state.sequence_length_used
+                    seq_len_display = f"{seq_len_used} (custom)"
+                elif model:
+                    seq_len_used = model.get_max_sequence_length()
+                    seq_len_display = f"{seq_len_used} (model default)"
+                else:
+                    seq_len_display = "Unknown"
+                
                 # Performance metrics
                 col1, col2, col3, col4 = st.columns(4)
                 with col1:
@@ -557,6 +583,10 @@ def display_recommendations(recommendations: List):
                         "TP Size", rec.performance.tensor_parallel_size
                     )
 
+                # Sequence length display
+                st.markdown(f"**Sequence Length Used:** {seq_len_display}")
+                st.caption("This sequence length is used for estimating KV cache memory requirements.")
+
                 # Memory breakdown
                 st.markdown("**Memory Breakdown (per GPU):**")
                 mem_col1, mem_col2 = st.columns(2)
@@ -564,6 +594,7 @@ def display_recommendations(recommendations: List):
                     st.write(f"- Weights: {rec.performance.memory_weights_gb:.2f} GB")
                 with mem_col2:
                     st.write(f"- KV Cache: {rec.performance.memory_kv_cache_gb:.2f} GB")
+                    st.caption(f"  _(based on sequence length: {seq_len_display})_")
 
                 # All compatible GPUs
                 if rec.all_compatible_gpus:
