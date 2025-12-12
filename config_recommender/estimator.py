@@ -62,7 +62,6 @@ class SyntheticBenchmarkEstimator:
 
     def __init__(
         self,
-        batch_size: int = 1,
         precision_bytes: int = 2,  # FP16 = 2 bytes, FP32 = 4 bytes
         memory_overhead_factor: float = 1.2,  # 20% overhead for fragmentation, etc.
         compute_efficiency: float = 0.5,  # Utilization efficiency (50% of peak)
@@ -71,13 +70,11 @@ class SyntheticBenchmarkEstimator:
         """Initialize the estimator.
 
         Args:
-            batch_size: Batch size for inference
             precision_bytes: Bytes per parameter (2 for FP16, 4 for FP32)
             memory_overhead_factor: Multiplier for memory overhead
             compute_efficiency: Fraction of peak compute actually achieved
             concurrent_users: Number of concurrent users hitting the server at once (affects KV cache memory requirements)
         """
-        self.batch_size = batch_size
         self.precision_bytes = precision_bytes
         self.memory_overhead_factor = memory_overhead_factor
         self.compute_efficiency = compute_efficiency
@@ -116,8 +113,8 @@ class SyntheticBenchmarkEstimator:
     def estimate_memory_activation(self, model: ModelArchitecture) -> float:
         """Estimate memory required for activations in GB.
 
-        This is a rough estimate based on batch size and model size.
-        Activations scale with batch_size * sequence_length * hidden_size.
+        This is a rough estimate based on concurrent users and model size.
+        Activations scale with concurrent_users * sequence_length * hidden_size.
         Uses concurrent_users to account for multiple concurrent requests.
 
         Args:

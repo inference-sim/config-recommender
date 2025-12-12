@@ -37,7 +37,6 @@ def test_gpu():
 def test_estimator_with_concurrent_users():
     """Test that estimator accepts concurrent_users parameter."""
     estimator = SyntheticBenchmarkEstimator(
-        batch_size=1,
         precision_bytes=2,
         concurrent_users=10,
     )
@@ -47,7 +46,6 @@ def test_estimator_with_concurrent_users():
 def test_estimator_default_concurrent_users():
     """Test that concurrent_users defaults to 1."""
     estimator = SyntheticBenchmarkEstimator(
-        batch_size=1,
         precision_bytes=2,
     )
     assert estimator.concurrent_users == 1
@@ -57,14 +55,12 @@ def test_kv_cache_increases_with_concurrent_users(test_model):
     """Test that KV cache memory increases with concurrent users."""
     # Estimator with 1 concurrent user
     estimator_1 = SyntheticBenchmarkEstimator(
-        batch_size=1,
         precision_bytes=2,
         concurrent_users=1,
     )
     
     # Estimator with 10 concurrent users
     estimator_10 = SyntheticBenchmarkEstimator(
-        batch_size=1,
         precision_bytes=2,
         concurrent_users=10,
     )
@@ -82,13 +78,11 @@ def test_kv_cache_increases_with_concurrent_users(test_model):
 def test_total_memory_increases_with_concurrent_users(test_model):
     """Test that total memory increases with concurrent users."""
     estimator_1 = SyntheticBenchmarkEstimator(
-        batch_size=1,
         precision_bytes=2,
         concurrent_users=1,
     )
     
     estimator_5 = SyntheticBenchmarkEstimator(
-        batch_size=1,
         precision_bytes=2,
         concurrent_users=5,
     )
@@ -107,13 +101,11 @@ def test_total_memory_increases_with_concurrent_users(test_model):
 def test_performance_with_concurrent_users(test_model, test_gpu):
     """Test that performance estimates change with concurrent users."""
     estimator_1 = SyntheticBenchmarkEstimator(
-        batch_size=1,
         precision_bytes=2,
         concurrent_users=1,
     )
     
     estimator_10 = SyntheticBenchmarkEstimator(
-        batch_size=1,
         precision_bytes=2,
         concurrent_users=10,
     )
@@ -141,7 +133,6 @@ def test_concurrent_users_may_require_tensor_parallelism(test_model):
     
     # With 1 concurrent user, model should fit
     estimator_1 = SyntheticBenchmarkEstimator(
-        batch_size=1,
         precision_bytes=2,
         concurrent_users=1,
     )
@@ -151,7 +142,6 @@ def test_concurrent_users_may_require_tensor_parallelism(test_model):
     
     # With many concurrent users, model may not fit in single GPU
     estimator_100 = SyntheticBenchmarkEstimator(
-        batch_size=1,
         precision_bytes=2,
         concurrent_users=100,
     )
@@ -166,31 +156,3 @@ def test_concurrent_users_may_require_tensor_parallelism(test_model):
         if result_1.performance.fits_in_memory and result_100.performance.fits_in_memory:
             assert result_100.performance.tensor_parallel_size >= result_1.performance.tensor_parallel_size
 
-
-def test_concurrent_users_batch_size_independence(test_model):
-    """Test that concurrent_users and batch_size are independent."""
-    # batch_size is for processing, concurrent_users is for KV cache
-    estimator = SyntheticBenchmarkEstimator(
-        batch_size=4,
-        precision_bytes=2,
-        concurrent_users=10,
-    )
-    
-    # Both should be stored independently
-    assert estimator.batch_size == 4
-    assert estimator.concurrent_users == 10
-    
-    # KV cache should use concurrent_users
-    kv_cache = estimator.estimate_memory_kv_cache(test_model, 2048)
-    
-    # Create another estimator with only concurrent_users set
-    estimator2 = SyntheticBenchmarkEstimator(
-        batch_size=1,
-        precision_bytes=2,
-        concurrent_users=10,
-    )
-    
-    kv_cache2 = estimator2.estimate_memory_kv_cache(test_model, 2048)
-    
-    # KV cache should be the same (uses concurrent_users, not batch_size)
-    assert kv_cache == kv_cache2
