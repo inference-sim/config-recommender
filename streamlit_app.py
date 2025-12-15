@@ -312,15 +312,16 @@ def render_gpus_tab():
         if input_method == "GPU Library":
             st.info("Select GPUs from the preloaded library of well-known GPUs")
             
-            # Get available GPU keys
-            available_gpus = list_available_gpus()
+            # Get all GPU specs at once to avoid repeated calls
+            all_gpu_specs = get_gpu_specs()
+            gpu_keys = list_available_gpus()
             
-            # Create a mapping of display names to keys
+            # Create a mapping of display names to GPU specs
             gpu_display_map = {}
-            for gpu_key in available_gpus:
-                gpu_spec = get_gpu_specs([gpu_key])[0]
+            for i, gpu_key in enumerate(gpu_keys):
+                gpu_spec = all_gpu_specs[i]
                 display_name = f"{gpu_key} - {gpu_spec.name} ({gpu_spec.memory_gb}GB)"
-                gpu_display_map[display_name] = gpu_key
+                gpu_display_map[display_name] = gpu_spec
             
             selected_displays = st.multiselect(
                 "Select GPUs from Library",
@@ -332,8 +333,7 @@ def render_gpus_tab():
                 if selected_displays:
                     added_count = 0
                     for display_name in selected_displays:
-                        gpu_key = gpu_display_map[display_name]
-                        gpu_spec = get_gpu_specs([gpu_key])[0]
+                        gpu_spec = gpu_display_map[display_name]
                         # Check if GPU is already in the list
                         if not any(g.name == gpu_spec.name for g in st.session_state.gpus):
                             st.session_state.gpus.append(gpu_spec)
