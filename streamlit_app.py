@@ -15,6 +15,7 @@ import streamlit as st
 
 from config_recommender import GPURecommender, GPUSpec, ModelArchitecture
 from config_recommender.estimator import SyntheticBenchmarkEstimator
+from config_recommender.gpu_library import get_gpu_specs, list_available_gpus
 
 # Page configuration
 st.set_page_config(
@@ -305,10 +306,47 @@ def render_gpus_tab():
         st.subheader("Add GPU")
 
         input_method = st.radio(
-            "Input Method", ["Manual Entry", "JSON Upload"], horizontal=True, key="gpu_input_method"
+            "Input Method", ["GPU Library", "Manual Entry", "JSON Upload"], horizontal=True, key="gpu_input_method"
         )
 
-        if input_method == "Manual Entry":
+        if input_method == "GPU Library":
+            st.info("Select GPUs from the preloaded library of well-known GPUs")
+            
+            # Get available GPU keys
+            available_gpus = list_available_gpus()
+            
+            # Create a mapping of display names to keys
+            gpu_display_map = {}
+            for gpu_key in available_gpus:
+                gpu_spec = get_gpu_specs([gpu_key])[0]
+                display_name = f"{gpu_key} - {gpu_spec.name} ({gpu_spec.memory_gb}GB)"
+                gpu_display_map[display_name] = gpu_key
+            
+            selected_displays = st.multiselect(
+                "Select GPUs from Library",
+                options=list(gpu_display_map.keys()),
+                help="Choose one or more GPUs from the library",
+            )
+            
+            if st.button("Add Selected GPUs from Library", type="primary"):
+                if selected_displays:
+                    added_count = 0
+                    for display_name in selected_displays:
+                        gpu_key = gpu_display_map[display_name]
+                        gpu_spec = get_gpu_specs([gpu_key])[0]
+                        # Check if GPU is already in the list
+                        if not any(g.name == gpu_spec.name for g in st.session_state.gpus):
+                            st.session_state.gpus.append(gpu_spec)
+                            added_count += 1
+                    if added_count > 0:
+                        st.success(f"✅ Added {added_count} GPU(s) from library")
+                        st.rerun()
+                    else:
+                        st.warning("⚠️ Selected GPUs are already in the list")
+                else:
+                    st.warning("⚠️ Please select at least one GPU")
+
+        elif input_method == "Manual Entry":
             with st.form("add_gpu_form"):
                 gpu_name = st.text_input(
                     "GPU Name", placeholder="e.g., NVIDIA A100 80GB", help="Name/model of the GPU"
