@@ -167,12 +167,18 @@ def main():
             )
 
         with st.expander("🔍 Assumptions"):
+            # Display input/output lengths
+            if input_length_param is not None and output_length_param is not None:
+                seq_display = f"Input: {input_length_param}, Output: {output_length_param} (Total: {sequence_length_param})"
+            else:
+                seq_display = "Default (1 input, 1 output for per-token estimation)"
+            
             st.markdown(
                 f"""
                 **Current Configuration:**
                 - Precision: {precision} ({precision_bytes} bytes/param)
                 - Concurrent Users: {concurrent_users}
-                - Sequence Length: {sequence_length if sequence_length > 0 else 'Model default (varies)'}
+                - Workload: {seq_display}
                 - Memory Overhead: {memory_overhead}x
                 - Latency Bound: {latency_bound_ms if latency_bound_ms else 'None'}
                 
@@ -196,7 +202,8 @@ def main():
 
     with tab1:
         render_recommendations_tab(
-            precision_bytes, concurrent_users, memory_overhead, latency_bound_ms, sequence_length_param
+            precision_bytes, concurrent_users, memory_overhead, latency_bound_ms, 
+            input_length_param, output_length_param, sequence_length_param
         )
 
 
@@ -463,7 +470,9 @@ def render_recommendations_tab(
     concurrent_users: int,
     memory_overhead: float,
     latency_bound_ms: Optional[float],
-    sequence_length: Optional[int],
+    input_length_param: Optional[int],
+    output_length_param: Optional[int],
+    sequence_length_param: Optional[int],
 ):
     """Render the recommendations results tab."""
     st.markdown('<h2 class="section-header">GPU Recommendations</h2>', unsafe_allow_html=True)
