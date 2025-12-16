@@ -70,7 +70,6 @@ class SyntheticBenchmarkEstimator:
         self,
         precision_bytes: int = 2,  # FP16 = 2 bytes, FP32 = 4 bytes
         memory_overhead_factor: float = 1.2,  # 20% overhead for fragmentation, etc.
-        concurrent_users: int = 1,  # Number of concurrent users hitting the server at once (affects KV cache memory requirements)
         input_length: Optional[int] = None,  # Input sequence length for BentoML estimation
         output_length: Optional[int] = None,  # Output sequence length for BentoML estimation
     ):
@@ -79,13 +78,11 @@ class SyntheticBenchmarkEstimator:
         Args:
             precision_bytes: Bytes per parameter (2 for FP16, 4 for FP32)
             memory_overhead_factor: Multiplier for memory overhead
-            concurrent_users: Number of concurrent users hitting the server at once (affects KV cache memory requirements)
             input_length: Input sequence length for BentoML's performance estimation (default: 1 for per-token decode)
             output_length: Output sequence length for BentoML's performance estimation (default: 1 for per-token decode)
         """
         self.precision_bytes = precision_bytes
         self.memory_overhead_factor = memory_overhead_factor
-        self.concurrent_users = concurrent_users
         self.input_length = input_length if input_length is not None else 1
         self.output_length = output_length if output_length is not None else 1
         
@@ -157,7 +154,7 @@ class SyntheticBenchmarkEstimator:
         """Estimate memory required for KV cache in GB.
 
         Uses config_explorer library for HF models, or falls back to calculation.
-        Uses concurrent_users to account for multiple concurrent requests hitting the server.
+        Calculates KV cache for a single request at the given sequence length (batch_size=1).
 
         Args:
             model: Model architecture
@@ -167,8 +164,8 @@ class SyntheticBenchmarkEstimator:
             Memory required in GB
         """
         # ModelArchitecture handles both HF and manual modes internally
-        # Use concurrent_users as batch_size for KV cache to account for concurrent requests
-        return model.get_kv_cache_gb(sequence_length, self.concurrent_users)
+        # Use batch_size=1 for KV cache (single request at max_model_len)
+        return model.get_kv_cache_gb(sequence_length, batch_size=1)
 
     def estimate_total_memory(
         self, model: ModelArchitecture, sequence_length: Optional[int] = None
@@ -274,7 +271,7 @@ class SyntheticBenchmarkEstimator:
                 gpu_name=bento_gpu_name,
                 model_config=bento_model_config,
                 precision=precision,
-                concurrency=self.concurrent_users,
+                concurrency=1,  # Single request for KV cache estimation
                 input_length=self.input_length,  # Input sequence length (prefill phase)
                 output_length=self.output_length,  # Output sequence length (decode phase)
                 mfu_prefill=0.45,  # Model FLOPs Utilization for prefill (typical: 0.3-0.5)

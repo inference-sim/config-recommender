@@ -91,13 +91,6 @@ def main():
         )
         precision_bytes = 2 if precision == "FP16" else 4
 
-        concurrent_users = st.number_input(
-            "Concurrent Users",
-            min_value=1,
-            value=1,
-            help="Number of concurrent users (affects KV cache memory)",
-        )
-
         input_length = st.number_input(
             "Input Length (tokens)",
             min_value=0,
@@ -186,6 +179,7 @@ def main():
                 - FLOPs-based compute throughput
                 - Memory bandwidth-based throughput
                 - Tensor parallelism for large models
+                - KV cache based on max_model_len (model's max context length)
                 
                 **Note:** All performance numbers are estimates based on synthetic benchmarks.
                 """
@@ -202,7 +196,7 @@ def main():
 
     with tab1:
         render_recommendations_tab(
-            precision_bytes, concurrent_users, memory_overhead, latency_bound_ms, 
+            precision_bytes, memory_overhead, latency_bound_ms, 
             input_length_param, output_length_param, sequence_length_param
         )
 
@@ -467,7 +461,6 @@ def render_gpus_tab():
 
 def render_recommendations_tab(
     precision_bytes: int,
-    concurrent_users: int,
     memory_overhead: float,
     latency_bound_ms: Optional[float],
     input_length_param: Optional[int],
@@ -493,7 +486,6 @@ def render_recommendations_tab(
                 estimator = SyntheticBenchmarkEstimator(
                     precision_bytes=precision_bytes,
                     memory_overhead_factor=memory_overhead,
-                    concurrent_users=concurrent_users,
                     input_length=input_length_param,
                     output_length=output_length_param,
                 )

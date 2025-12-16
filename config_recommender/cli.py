@@ -59,7 +59,7 @@ Examples:
 
   # Specify input and output sequence lengths for workload-specific estimation
   config-recommender --models examples/models.json --gpu-library H100 \\
-      --input-length 1024 --output-length 512 --concurrent-users 10
+      --input-length 1024 --output-length 512
 
   # Output to file
   config-recommender --models examples/models.json --gpu-library H100 A100-80GB \\
@@ -122,13 +122,6 @@ Examples:
         help="Output sequence length in tokens (for decode phase). If not specified, defaults to 1 for per-token decode estimation",
     )
 
-    parser.add_argument(
-        "--concurrent-users",
-        type=int,
-        default=1,
-        help="Number of concurrent users hitting the server at once (default: 1)",
-    )
-
     args = parser.parse_args()
 
     try:
@@ -188,11 +181,10 @@ Examples:
         if input_length is not None and output_length is not None:
             kv_sequence_length = input_length + output_length
 
-        # Use concurrent_users for KV cache calculations (accounts for multiple concurrent requests)
+        # Create estimator for KV cache calculations (batch_size=1 for single request)
         precision_bytes = 2 if args.precision == "fp16" else 4
         estimator = SyntheticBenchmarkEstimator(
             precision_bytes=precision_bytes,
-            concurrent_users=args.concurrent_users,
             input_length=input_length,
             output_length=output_length,
         )
@@ -219,7 +211,6 @@ Examples:
                 "sequence_length": kv_sequence_length,
                 "input_length": input_length,
                 "output_length": output_length,
-                "concurrent_users": args.concurrent_users,
             },
         }
 

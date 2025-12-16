@@ -1,4 +1,4 @@
-"""Unit tests for concurrent users functionality."""
+"""Unit tests for KV cache calculations with max_model_len."""
 
 import pytest
 
@@ -9,7 +9,7 @@ from config_recommender.recommender import GPURecommender
 
 @pytest.fixture
 def test_model():
-    """Test model for concurrent users tests."""
+    """Test model for KV cache tests."""
     return ModelArchitecture(
         name="test-model-7b",
         num_parameters=7.0,
@@ -23,7 +23,7 @@ def test_model():
 
 @pytest.fixture
 def test_gpu():
-    """Test GPU for concurrent users tests."""
+    """Test GPU for KV cache tests."""
     return GPUSpec(
         name="NVIDIA A100",
         memory_gb=80.0,
@@ -34,125 +34,83 @@ def test_gpu():
     )
 
 
-def test_estimator_with_concurrent_users():
-    """Test that estimator accepts concurrent_users parameter."""
-    estimator = SyntheticBenchmarkEstimator(
-        precision_bytes=2,
-        concurrent_users=10,
-    )
-    assert estimator.concurrent_users == 10
-
-
-def test_estimator_default_concurrent_users():
-    """Test that concurrent_users defaults to 1."""
+def test_kv_cache_uses_batch_size_one(test_model):
+    """Test that KV cache is calculated with batch_size=1 for single request."""
     estimator = SyntheticBenchmarkEstimator(
         precision_bytes=2,
     )
-    assert estimator.concurrent_users == 1
+    
+    # Calculate KV cache for max sequence length
+    kv_cache_gb = estimator.estimate_memory_kv_cache(test_model, 2048)
+    
+    # Should be calculated for batch_size=1 (single request)
+    # Verify by checking against model's internal calculation
+    expected_kv_cache = test_model.get_kv_cache_gb(2048, batch_size=1)
+    assert kv_cache_gb == expected_kv_cache
 
 
-def test_kv_cache_increases_with_concurrent_users(test_model):
-    """Test that KV cache memory increases with concurrent users."""
-    # Estimator with 1 concurrent user
-    estimator_1 = SyntheticBenchmarkEstimator(
+def test_kv_cache_increases_with_sequence_length(test_model):
+    """Test that KV cache memory increases with sequence length."""
+    estimator = SyntheticBenchmarkEstimator(
         precision_bytes=2,
-        concurrent_users=1,
     )
     
-    # Estimator with 10 concurrent users
-    estimator_10 = SyntheticBenchmarkEstimator(
-        precision_bytes=2,
-        concurrent_users=10,
-    )
+    # Calculate KV cache for different sequence lengths
+    kv_cache_512 = estimator.estimate_memory_kv_cache(test_model, 512)
+    kv_cache_2048 = estimator.estimate_memory_kv_cache(test_model, 2048)
     
-    # Calculate KV cache for both
-    kv_cache_1 = estimator_1.estimate_memory_kv_cache(test_model, 2048)
-    kv_cache_10 = estimator_10.estimate_memory_kv_cache(test_model, 2048)
-    
-    # KV cache should scale with concurrent users
-    assert kv_cache_10 > kv_cache_1
-    # Should be approximately 10x (allowing for floating point precision)
-    assert abs(kv_cache_10 / kv_cache_1 - 10.0) < 0.1
+    # KV cache should scale with sequence length
+    assert kv_cache_2048 > kv_cache_512
+    # Should be approximately 4x (2048/512)
+    assert abs(kv_cache_2048 / kv_cache_512 - 4.0) < 0.1
 
 
-def test_total_memory_increases_with_concurrent_users(test_model):
-    """Test that total memory increases with concurrent users."""
-    estimator_1 = SyntheticBenchmarkEstimator(
+def test_total_memory_uses_max_model_len(test_model):
+    """Test that total memory calculation uses model's max sequence length by default."""
+    estimator = SyntheticBenchmarkEstimator(
         precision_bytes=2,
-        concurrent_users=1,
     )
     
-    estimator_5 = SyntheticBenchmarkEstimator(
+    # Get total memory without specifying sequence length
+    memory = estimator.estimate_total_memory(test_model)
+    
+    # Should use model's max_sequence_length (2048)
+    expected_kv_cache = test_model.get_kv_cache_gb(2048, batch_size=1)
+    
+    # KV cache should match expected
+    assert memory["kv_cache_gb"] == expected_kv_cache
+    
+    # Total memory should be (weights + kv_cache) * overhead
+    expected_total = (memory["weights_gb"] + expected_kv_cache) * estimator.memory_overhead_factor
+    assert abs(memory["total_gb"] - expected_total) < 0.01
+
+
+def test_performance_with_max_model_len(test_model, test_gpu):
+    """Test that performance estimates use max_model_len for KV cache."""
+    estimator = SyntheticBenchmarkEstimator(
         precision_bytes=2,
-        concurrent_users=5,
     )
     
-    memory_1 = estimator_1.estimate_total_memory(test_model, 2048)
-    memory_5 = estimator_5.estimate_total_memory(test_model, 2048)
+    # Get performance estimate using model's max sequence length
+    perf = estimator.estimate_performance(test_model, test_gpu, 2048)
     
-    # Total memory should increase with concurrent users
-    assert memory_5["total_gb"] > memory_1["total_gb"]
-    # KV cache should scale with concurrent users
-    assert memory_5["kv_cache_gb"] > memory_1["kv_cache_gb"]
+    # KV cache should be for batch_size=1
+    expected_kv_cache = test_model.get_kv_cache_gb(2048, batch_size=1)
+    assert abs(perf.memory_kv_cache_gb - expected_kv_cache) < 0.01
+
+
+def test_memory_scales_with_sequence_length_not_batch(test_model):
+    """Test that memory scales with sequence length, not batch size."""
+    estimator = SyntheticBenchmarkEstimator(
+        precision_bytes=2,
+    )
+    
+    memory_512 = estimator.estimate_total_memory(test_model, sequence_length=512)
+    memory_2048 = estimator.estimate_total_memory(test_model, sequence_length=2048)
+    
+    # Total memory should increase with sequence length
+    assert memory_2048["total_gb"] > memory_512["total_gb"]
+    # KV cache should scale with sequence length
+    assert memory_2048["kv_cache_gb"] > memory_512["kv_cache_gb"]
     # Weights should remain the same
-    assert memory_5["weights_gb"] == memory_1["weights_gb"]
-
-
-def test_performance_with_concurrent_users(test_model, test_gpu):
-    """Test that performance estimates change with concurrent users."""
-    estimator_1 = SyntheticBenchmarkEstimator(
-        precision_bytes=2,
-        concurrent_users=1,
-    )
-    
-    estimator_10 = SyntheticBenchmarkEstimator(
-        precision_bytes=2,
-        concurrent_users=10,
-    )
-    
-    perf_1 = estimator_1.estimate_performance(test_model, test_gpu, 2048)
-    perf_10 = estimator_10.estimate_performance(test_model, test_gpu, 2048)
-    
-    # With more concurrent users, memory required increases
-    assert perf_10.memory_required_gb > perf_1.memory_required_gb
-    # KV cache should increase
-    assert perf_10.memory_kv_cache_gb > perf_1.memory_kv_cache_gb
-
-
-def test_concurrent_users_may_require_tensor_parallelism(test_model):
-    """Test that high concurrent users may require tensor parallelism."""
-    # Create a GPU with limited memory
-    small_gpu = GPUSpec(
-        name="NVIDIA V100",
-        memory_gb=32.0,
-        memory_bandwidth_gb_s=900.0,
-        tflops_fp16=125.0,
-        tflops_fp32=62.5,
-        cost_per_hour=2.48,
-    )
-    
-    # With 1 concurrent user, model should fit
-    estimator_1 = SyntheticBenchmarkEstimator(
-        precision_bytes=2,
-        concurrent_users=1,
-    )
-    
-    recommender_1 = GPURecommender(estimator=estimator_1)
-    result_1 = recommender_1.recommend_gpu(test_model, [small_gpu], sequence_length=2048)
-    
-    # With many concurrent users, model may not fit in single GPU
-    estimator_100 = SyntheticBenchmarkEstimator(
-        precision_bytes=2,
-        concurrent_users=100,
-    )
-    
-    recommender_100 = GPURecommender(estimator=estimator_100)
-    result_100 = recommender_100.recommend_gpu(test_model, [small_gpu], sequence_length=2048)
-    
-    # With low concurrent users, should have lower or equal TP size compared to high concurrent users
-    # The key is that higher concurrent users leads to higher memory requirements
-    if result_1.performance and result_100.performance:
-        # If both fit, high concurrent users should require higher or equal TP
-        if result_1.performance.fits_in_memory and result_100.performance.fits_in_memory:
-            assert result_100.performance.tensor_parallel_size >= result_1.performance.tensor_parallel_size
-
+    assert memory_2048["weights_gb"] == memory_512["weights_gb"]
