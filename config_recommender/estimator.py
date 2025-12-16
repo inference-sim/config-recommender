@@ -227,6 +227,8 @@ class SyntheticBenchmarkEstimator:
         
         # Map our GPU names to BentoML's naming convention
         # BentoML uses simplified names like "H100", "A100", etc.
+        # For GPUs not directly supported by BentoML, we intentionally use None
+        # to trigger the fallback calculation which uses our own GPU specs
         gpu_name_mapping = {
             "NVIDIA H100": "H100",
             "NVIDIA H100 80GB": "H100",
@@ -239,15 +241,22 @@ class SyntheticBenchmarkEstimator:
             "NVIDIA L40 48GB": "L40",
             "NVIDIA L4": "L4",
             "NVIDIA L4 24GB": "L4",
-            "NVIDIA V100": "A100",  # Fallback to A100 specs if V100 not supported
-            "NVIDIA V100 32GB": "A100",
-            "NVIDIA T4": "A100",  # Fallback to A100 specs if T4 not supported
-            "NVIDIA T4 16GB": "A100",
+            # V100 and T4 not in BentoML's GPU list - will use fallback calculation
+            # which uses our actual GPU specs for accurate results
         }
         
-        bento_gpu_name = gpu_name_mapping.get(gpu.name, gpu.name.replace("NVIDIA ", ""))
+        bento_gpu_name = gpu_name_mapping.get(gpu.name)
+        
+        # If GPU is not in mapping, try to extract a simple name (e.g., "H100" from "NVIDIA H100")
+        if bento_gpu_name is None:
+            bento_gpu_name = gpu.name.replace("NVIDIA ", "").split()[0]
         
         try:
+            # Only attempt BentoML estimation if we have a known GPU mapping
+            if gpu.name not in gpu_name_mapping and bento_gpu_name not in ["H100", "H200", "A100", "L40", "L4"]:
+                # Force fallback for unsupported GPUs to use accurate custom specs
+                raise ValueError(f"GPU {gpu.name} not directly supported by BentoML, using custom calculation")
+            
             # Use BentoML's estimate_llm_performance for accurate roofline analysis
             # This provides:
             # - Detailed FLOPS calculation (attention + MLP)
