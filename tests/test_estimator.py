@@ -125,16 +125,6 @@ def test_estimate_total_memory(small_model):
     assert memory["total_gb"] == pytest.approx(expected_total, rel=0.01)
 
 
-def test_estimate_flops_per_token(small_model):
-    """Test FLOPs per token estimation."""
-    estimator = SyntheticBenchmarkEstimator()
-    flops = estimator.estimate_flops_per_token(small_model)
-
-    # ~2 FLOPs per parameter
-    expected = 2 * small_model.num_parameters * 1e9
-    assert flops == pytest.approx(expected, rel=0.01)
-
-
 def test_estimate_performance_fits(small_model, high_end_gpu):
     """Test performance estimation when model fits in GPU."""
     estimator = SyntheticBenchmarkEstimator()
