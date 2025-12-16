@@ -117,8 +117,8 @@ def test_h100_specs():
     
     assert h100.memory_gb == 80.0
     assert h100.memory_bandwidth_gb_s == 3350.0
-    assert h100.tflops_fp16 == 989.0
-    assert h100.tflops_fp32 == 494.5
+    assert h100.tflops_fp16 == 1979.0
+    assert h100.tflops_fp32 == 989.0
 
 
 def test_h200_specs():
@@ -127,8 +127,8 @@ def test_h200_specs():
     
     assert h200.memory_gb == 141.0
     assert h200.memory_bandwidth_gb_s == 4800.0
-    assert h200.tflops_fp16 == 989.0
-    assert h200.tflops_fp32 == 494.5
+    assert h200.tflops_fp16 == 1979.0
+    assert h200.tflops_fp32 == 989.0
 
 
 def test_a100_80gb_specs():
@@ -149,3 +149,13 @@ def test_l40_specs():
     assert l40.memory_bandwidth_gb_s == 864.0
     assert l40.tflops_fp16 == 362.0
     assert l40.tflops_fp32 == 181.0
+
+
+def test_l4_specs():
+    """Test L4 GPU specifications."""
+    l4 = get_gpu_from_library("L4")
+    
+    assert l4.memory_gb == 24.0
+    assert l4.memory_bandwidth_gb_s == 300.0
+    assert l4.tflops_fp16 == 120.0
+    assert l4.tflops_fp32 == 242.0

@@ -11,6 +11,7 @@ from config_recommender import (
     GPURecommender,
     ModelArchitecture,
     create_custom_gpu,
+    get_gpu_from_library,
     get_gpu_specs,
 )
 
@@ -83,29 +84,35 @@ def main():
         print(f"  Memory Required: {result.performance.memory_required_gb:.2f} GB")
     
     print(f"\nAll compatible GPUs ({len(result.all_compatible_gpus)}):")
-    for gpu_info in result.all_compatible_gpus[:5]:  # Show top 5
+    for gpu_info in result.all_compatible_gpus[:3]:  # Show top 3
         print(f"  - {gpu_info['gpu_name']}: {gpu_info['tokens_per_second']:.2f} tokens/sec")
     
     # Example 4: Override library GPU specs
     print("\n" + "=" * 70)
-    print("Example 4: Using library GPU as base and customizing")
+    print("Example 4: Override just the cost for a library GPU")
     print("=" * 70)
     
-    # Get a library GPU and modify it
+    # Get H100 from library and override only the cost
     from config_recommender import GPUSpec
     
-    # Create a modified version of H100 with different cost
+    h100_base = get_gpu_from_library("H100")
     h100_custom = GPUSpec(
-        name="NVIDIA H100 80GB (Custom Pricing)",
-        memory_gb=80.0,
-        memory_bandwidth_gb_s=3350.0,
-        tflops_fp16=989.0,
-        tflops_fp32=494.5,
-        cost_per_hour=6.0,  # Custom pricing
+        name=h100_base.name,
+        memory_gb=h100_base.memory_gb,
+        memory_bandwidth_gb_s=h100_base.memory_bandwidth_gb_s,
+        tflops_fp16=h100_base.tflops_fp16,
+        tflops_fp32=h100_base.tflops_fp32,
+        cost_per_hour=6.0,  # Custom pricing - only thing we changed
     )
     
-    print(f"\nCustom H100 variant: {h100_custom.name}")
-    print(f"  Modified cost: ${h100_custom.cost_per_hour}/hour (vs. standard $4.76)")
+    print(f"\nOriginal H100: {h100_base.name}")
+    print(f"  Cost: ${h100_base.cost_per_hour}/hour")
+    print(f"\nCustom H100 with modified cost: {h100_custom.name}")
+    print(f"  Cost: ${h100_custom.cost_per_hour}/hour")
+    print(f"\nAll other specs remain the same:")
+    print(f"  Memory: {h100_custom.memory_gb}GB")
+    print(f"  Bandwidth: {h100_custom.memory_bandwidth_gb_s} GB/s")
+    print(f"  FP16: {h100_custom.tflops_fp16} TFLOPS")
     
     print("\n" + "=" * 70)
     print("Summary: GPU library provides flexibility to:")
