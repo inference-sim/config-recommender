@@ -1,7 +1,20 @@
 """Synthetic benchmark estimator for model-GPU performance prediction.
 
 This module uses BentoML's llm-optimizer library for FLOPs-based performance estimation.
-The llm-optimizer library provides production-grade roofline analysis for LLM inference.
+The llm-optimizer library provides production-grade roofline analysis for LLM inference,
+implementing detailed FLOPS calculations and memory access patterns based on academic
+literature and industry best practices.
+
+Key features from BentoML's llm-optimizer:
+- Accurate transformer FLOPS calculation (attention + MLP)
+- Roofline analysis to determine compute vs memory bottlenecks
+- Support for modern GPU architectures (H100, H200, A100, L40, etc.)
+- Proper handling of prefill vs decode phases
+
+References:
+- BentoML llm-optimizer: https://github.com/bentoml/llm-optimizer
+- Roofline analysis: https://jax-ml.github.io/scaling-book/roofline/
+- "LLM Inference Unveiled: Survey and Roofline Model Insights" (arXiv:2402.16363)
 """
 
 from dataclasses import dataclass
@@ -186,6 +199,13 @@ class SyntheticBenchmarkEstimator:
     ) -> PerformanceEstimate:
         """Estimate performance of a model on a specific GPU using BentoML's roofline analysis.
 
+        This method integrates BentoML's llm-optimizer library for production-grade performance
+        estimation while maintaining backward compatibility with the existing API. It uses:
+        
+        1. BentoML's roofline analysis for compute/memory bottleneck detection
+        2. Our own memory calculation for sequence-length-specific estimates
+        3. Fallback to simplified estimation if GPU not supported by BentoML
+        
         Args:
             model: Model architecture
             gpu: GPU specification
@@ -198,14 +218,14 @@ class SyntheticBenchmarkEstimator:
         if sequence_length is None:
             sequence_length = model.get_max_sequence_length()
 
-        # Convert model to BentoML format
+        # Convert our model representation to BentoML's ModelConfig format
         bento_model_config = self._convert_to_bento_model_config(model)
         
-        # Determine precision string from bytes
+        # Map precision bytes to string format expected by BentoML
         precision_map = {2: "fp16", 4: "fp32", 1: "fp8"}
         precision = precision_map.get(self.precision_bytes, "fp16")
         
-        # Map our GPU name to BentoML's GPU names
+        # Map our GPU names to BentoML's naming convention
         # BentoML uses simplified names like "H100", "A100", etc.
         gpu_name_mapping = {
             "NVIDIA H100": "H100",
@@ -225,23 +245,25 @@ class SyntheticBenchmarkEstimator:
             "NVIDIA T4 16GB": "A100",
         }
         
-        # Try to find a matching GPU name, otherwise use the name as-is
         bento_gpu_name = gpu_name_mapping.get(gpu.name, gpu.name.replace("NVIDIA ", ""))
         
         try:
-            # Use BentoML's estimate_llm_performance function
-            # We use decode phase for single-token generation (which is what we're estimating)
-            # input_length=1 for decode phase, output_length=1 for single token
+            # Use BentoML's estimate_llm_performance for accurate roofline analysis
+            # This provides:
+            # - Detailed FLOPS calculation (attention + MLP)
+            # - Memory bandwidth analysis
+            # - Arithmetic intensity computation
+            # - Automatic bottleneck detection (compute vs memory bound)
             bento_result = estimate_llm_performance(
                 num_gpus=tensor_parallel_size,
                 gpu_name=bento_gpu_name,
                 model_config=bento_model_config,
                 precision=precision,
                 concurrency=self.concurrent_users,
-                input_length=1,  # Decode phase generates one token at a time
-                output_length=1,  # Estimating per-token latency
-                mfu_prefill=0.45,  # Model FLOPs utilization for prefill
-                mfu_decode=0.30,   # Model FLOPs utilization for decode
+                input_length=1,  # Decode phase: generating one token at a time
+                output_length=1,  # Single token generation for per-token metrics
+                mfu_prefill=0.45,  # Model FLOPs Utilization for prefill (typical: 0.3-0.5)
+                mfu_decode=0.30,   # Model FLOPs Utilization for decode (typical: 0.2-0.4)
                 vram_util_factor=1.0 / self.memory_overhead_factor,  # Convert our overhead to utilization
             )
             

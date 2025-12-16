@@ -166,17 +166,19 @@ The recommendation engine automatically fetches model architecture details from 
 
 ### Synthetic Benchmark Estimation
 
-The recommendation engine estimates performance using:
+The recommendation engine estimates performance using BentoML's llm-optimizer library for production-grade roofline analysis:
 
 1. **Memory Requirements** (via config_explorer):
    - **Weights**: Accurate model size from HuggingFace safetensors
    - **KV Cache**: Precise calculation accounting for attention type (MHA/GQA/MQA/MLA)
-   - **Activations** (WIP): Estimated based on batch size, sequence length, and hidden dimensions
+   - **Memory overhead**: Configurable factor for fragmentation and activations
 
-2. **Performance Estimation**:
-   - **Compute-bound throughput**: Based on FLOPs required per token and GPU's peak FP16 performance
-   - **Memory-bound throughput**: Based on bytes read per token and GPU's memory bandwidth
-   - **Actual throughput**: Limited by the bottleneck (compute or memory)
+2. **Performance Estimation** (via BentoML's llm-optimizer):
+   - **Roofline Analysis**: Determines whether operations are compute-bound or memory-bound
+   - **FLOPS Calculation**: Detailed transformer FLOPS (attention + MLP) based on academic literature
+   - **Memory Bandwidth Analysis**: Accurate memory access patterns for prefill and decode phases
+   - **Arithmetic Intensity**: Calculates ops/byte ratio to identify bottlenecks
+   - **Hardware Utilization**: Accounts for realistic Model FLOPs Utilization (MFU) rates
 
 3. **GPU Selection**:
    - Filter GPUs that can fit the model in memory
@@ -302,6 +304,8 @@ Contributions are welcome! Please ensure:
 
 ## References
 
-Inspired by synthetic benchmark approaches in:
-- [BentoML's llm-optimizer](https://github.com/bentoml/llm-optimizer)
-- FLOPs-based performance estimation techniques
+This project leverages and is inspired by:
+- [BentoML's llm-optimizer](https://github.com/bentoml/llm-optimizer) - Production-grade roofline analysis for LLM inference performance estimation
+- [llm-d-benchmark](https://github.com/llm-d/llm-d-benchmark) - config_explorer library for accurate model memory calculations
+- Roofline analysis methodology: [JAX Scaling Book](https://jax-ml.github.io/scaling-book/roofline/)
+- "LLM Inference Unveiled: Survey and Roofline Model Insights" ([arXiv:2402.16363](https://arxiv.org/abs/2402.16363))
