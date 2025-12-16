@@ -47,11 +47,11 @@ Examples:
   config-recommender --list-gpus
 
   # Use custom GPU file
-  config-recommender --models examples/models.json --gpus examples/gpus.json
+  config-recommender --models examples/models.json --gpus examples/custom_gpus.json
 
   # Extend GPU library with custom GPUs
   config-recommender --models examples/models.json --gpu-library H100 A100-80GB \\
-      --extend-gpus custom_gpus.json
+      --extend-gpus examples/custom_gpus.json
 
   # With latency constraint and custom parameters
   config-recommender --models examples/models.json --gpu-library H100 A100-80GB \\

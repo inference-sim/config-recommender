@@ -119,12 +119,12 @@ def test_example_files_exist():
     models = load_models_from_json(models_file)
     assert len(models) > 0, "examples/models.json should contain at least one model"
 
-    # Check gpus.json exists and is valid
-    gpus_file = examples_dir / "gpus.json"
-    assert gpus_file.exists(), "examples/gpus.json should exist"
+    # Check custom_gpus.json exists and is valid
+    gpus_file = examples_dir / "custom_gpus.json"
+    assert gpus_file.exists(), "examples/custom_gpus.json should exist"
 
     gpus = load_gpus_from_json(gpus_file)
-    assert len(gpus) > 0, "examples/gpus.json should contain at least one GPU"
+    assert len(gpus) > 0, "examples/custom_gpus.json should contain at least one GPU"
 
 
 def test_cli_list_gpus():

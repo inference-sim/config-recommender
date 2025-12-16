@@ -82,11 +82,11 @@ config-recommender --models examples/models.json --gpu-library H100 A100-80GB L4
 config-recommender --list-gpus
 
 # Traditional usage with custom GPU JSON file
-config-recommender --models examples/models.json --gpus examples/gpus.json
+config-recommender --models examples/models.json --gpus examples/custom_gpus.json
 
 # Combine library GPUs with custom GPUs
 config-recommender --models examples/models.json --gpu-library H100 A100-80GB \
-    --extend-gpus custom_gpus.json
+    --extend-gpus examples/custom_gpus.json
 
 # With latency constraint
 config-recommender --models examples/models.json --gpu-library H100 A100-80GB \
@@ -287,7 +287,7 @@ pytest tests/test_recommender.py
 
 See the `examples/` directory for sample model and GPU configuration files:
 - `examples/models.json`: Sample model architectures (Llama-2, Mistral)
-- `examples/gpus.json`: Sample GPU specifications (A100, H100, V100, T4, L4)
+- `examples/custom_gpus.json`: Sample GPU specifications (A100, H100, V100, T4, L4)
 - `examples/basic_usage.py`: A simple, basic usage of the Python API, single model recommendation
 - `examples/advanced_usage.py`: An advanced usage, multiple models recommendations
 - `examples/tensor_parallelism_example.py`: Demonstrates a model requiring TP>1

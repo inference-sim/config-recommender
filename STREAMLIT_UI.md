@@ -64,7 +64,7 @@ The GPUs tab allows you to define available GPU specifications:
 
 **JSON Upload:**
 - Upload a JSON file with GPU catalog
-- See `examples/gpus.json` for format
+- See `examples/custom_gpus.json` for format
 
 **Example JSON:**
 ```json

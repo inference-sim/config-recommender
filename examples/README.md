@@ -7,7 +7,7 @@ This directory contains example files and scripts demonstrating how to use the G
 ### Data Files
 
 - **`models.json`**: Sample model architectures including Llama-2 and Mistral models
-- **`gpus.json`**: Sample GPU specifications including NVIDIA A100, H100, V100, T4, and L4
+- **`custom_gpus.json`**: Sample GPU specifications including NVIDIA A100, H100, V100, T4, and L4
 
 ### Python Scripts
 
@@ -57,12 +57,12 @@ This demonstrates a complete end-to-end workflow:
 
 ```bash
 # Basic recommendation
-python -m config_recommender.cli --models examples/models.json --gpus examples/gpus.json
+python -m config_recommender.cli --models examples/models.json --gpus examples/custom_gpus.json
 
 # With options
 python -m config_recommender.cli \
     --models examples/models.json \
-    --gpus examples/gpus.json \
+    --gpus examples/custom_gpus.json \
     --latency-bound 10 \
     --precision fp16 \
     --pretty
@@ -70,7 +70,7 @@ python -m config_recommender.cli \
 # Save to file
 python -m config_recommender.cli \
     --models examples/models.json \
-    --gpus examples/gpus.json \
+    --gpus examples/custom_gpus.json \
     --output recommendations.json
 ```
 
@@ -109,7 +109,7 @@ export HF_TOKEN=your_huggingface_token
 
 ### GPU Specification
 
-The `gpus.json` file contains an array of GPU specifications:
+The `custom_gpus.json` file contains an array of GPU specifications:
 
 ```json
 [
@@ -162,7 +162,7 @@ The recommendation engine outputs JSON with the following structure:
 To create your own model or GPU configurations:
 
 1. Create a JSON file with your model specifications (see `models.json` format)
-2. Create a JSON file with your GPU specifications (see `gpus.json` format)
+2. Create a JSON file with your GPU specifications (see `custom_gpus.json` format)
 3. Run the CLI or use the Python API to get recommendations
 
 Example:
