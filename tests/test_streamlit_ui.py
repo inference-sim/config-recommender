@@ -58,18 +58,16 @@ def test_estimator_configuration():
     estimator = SyntheticBenchmarkEstimator(
         precision_bytes=2,
         memory_overhead_factor=1.2,
-        concurrent_users=1,
     )
 
     assert estimator.precision_bytes == 2
     assert estimator.memory_overhead_factor == 1.2
-    assert estimator.concurrent_users == 1
 
 
 def test_recommendations_generation(sample_models, sample_gpus):
     """Test that recommendations can be generated successfully."""
     estimator = SyntheticBenchmarkEstimator(
-        precision_bytes=2, memory_overhead_factor=1.2, concurrent_users=1
+        precision_bytes=2, memory_overhead_factor=1.2
     )
     recommender = GPURecommender(estimator=estimator)
 
@@ -85,7 +83,7 @@ def test_recommendations_generation(sample_models, sample_gpus):
 def test_recommendations_with_latency_bound(sample_models, sample_gpus):
     """Test recommendations with latency constraint."""
     estimator = SyntheticBenchmarkEstimator(
-        precision_bytes=2, memory_overhead_factor=1.2, concurrent_users=1
+        precision_bytes=2, memory_overhead_factor=1.2
     )
     recommender = GPURecommender(estimator=estimator, latency_bound_ms=10.0)
 
@@ -200,22 +198,22 @@ def test_multiple_models_recommendations(sample_gpus):
 
 
 def test_concurrent_users_impact(sample_models, sample_gpus):
-    """Test that concurrent users parameter affects memory requirements."""
-    # Test with 1 user
-    estimator_1user = SyntheticBenchmarkEstimator(concurrent_users=1)
-    recommender_1user = GPURecommender(estimator=estimator_1user)
-    results_1user = recommender_1user.recommend_for_models(sample_models, sample_gpus)
+    """Test that sequence length parameter affects memory requirements."""
+    # Test with shorter sequence length
+    estimator_short = SyntheticBenchmarkEstimator()
+    recommender_short = GPURecommender(estimator=estimator_short)
+    results_short = recommender_short.recommend_for_models(sample_models, sample_gpus, sequence_length=1024)
 
-    # Test with 10 users
-    estimator_10users = SyntheticBenchmarkEstimator(concurrent_users=10)
-    recommender_10users = GPURecommender(estimator=estimator_10users)
-    results_10users = recommender_10users.recommend_for_models(sample_models, sample_gpus)
+    # Test with longer sequence length
+    estimator_long = SyntheticBenchmarkEstimator()
+    recommender_long = GPURecommender(estimator=estimator_long)
+    results_long = recommender_long.recommend_for_models(sample_models, sample_gpus, sequence_length=4096)
 
-    # Memory should be higher with more concurrent users
-    mem_1user = results_1user[0].performance.memory_required_gb
-    mem_10users = results_10users[0].performance.memory_required_gb
+    # Memory should be higher with longer sequence length
+    mem_short = results_short[0].performance.memory_required_gb
+    mem_long = results_long[0].performance.memory_required_gb
 
-    assert mem_10users > mem_1user, "More concurrent users should require more memory"
+    assert mem_long > mem_short, "Longer sequence length should require more memory"
 
 
 def test_filter_and_sort_logic(sample_models, sample_gpus):

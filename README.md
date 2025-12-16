@@ -98,7 +98,7 @@ config-recommender --models examples/models.json --gpu-library H100 L40 \
 
 # Custom parameters
 config-recommender --models examples/models.json --gpu-library H100 \
-    --precision fp16 --concurrent-users 10
+    --precision fp16 --input-length 1024 --output-length 512
 ```
 
 ### Python API
