@@ -57,6 +57,10 @@ Examples:
   config-recommender --models examples/models.json --gpu-library H100 A100-80GB \\
       --latency-bound 10 --precision fp16
 
+  # Specify input and output sequence lengths for workload-specific estimation
+  config-recommender --models examples/models.json --gpu-library H100 \\
+      --input-length 1024 --output-length 512 --concurrent-users 10
+
   # Output to file
   config-recommender --models examples/models.json --gpu-library H100 A100-80GB \\
       --output recommendations.json
@@ -109,7 +113,19 @@ Examples:
     parser.add_argument(
         "--sequence-length",
         type=int,
-        help="Sequence length (default: use model max_sequence_length)",
+        help="DEPRECATED: Use --input-length and --output-length instead. Total sequence length for KV cache calculation (default: use model max_sequence_length)",
+    )
+
+    parser.add_argument(
+        "--input-length",
+        type=int,
+        help="Input sequence length in tokens (for prefill phase). If not specified, defaults to 1 for per-token decode estimation",
+    )
+
+    parser.add_argument(
+        "--output-length",
+        type=int,
+        help="Output sequence length in tokens (for decode phase). If not specified, defaults to 1 for per-token decode estimation",
     )
 
     parser.add_argument(
@@ -169,11 +185,24 @@ Examples:
             print("Error: No GPUs found or selected", file=sys.stderr)
             sys.exit(1)
 
+        # Handle input_length and output_length parameters
+        # For backward compatibility, if sequence_length is provided but not input/output, use it
+        input_length = args.input_length
+        output_length = args.output_length
+        
+        # Calculate sequence_length for KV cache if not provided
+        # If input/output are specified, use their sum; otherwise use the explicit sequence_length
+        kv_sequence_length = args.sequence_length
+        if kv_sequence_length is None and input_length is not None and output_length is not None:
+            kv_sequence_length = input_length + output_length
+
         # Use concurrent_users for KV cache calculations (accounts for multiple concurrent requests)
         precision_bytes = 2 if args.precision == "fp16" else 4
         estimator = SyntheticBenchmarkEstimator(
             precision_bytes=precision_bytes,
             concurrent_users=args.concurrent_users,
+            input_length=input_length,
+            output_length=output_length,
         )
 
         # Create recommender
@@ -186,7 +215,7 @@ Examples:
         results = recommender.recommend_for_models(
             models=models,
             available_gpus=gpus,
-            sequence_length=args.sequence_length,
+            sequence_length=kv_sequence_length,
         )
 
         # Convert to dict for JSON output
@@ -195,7 +224,9 @@ Examples:
             "parameters": {
                 "precision": args.precision,
                 "latency_bound_ms": args.latency_bound,
-                "sequence_length": args.sequence_length,
+                "sequence_length": kv_sequence_length,
+                "input_length": input_length,
+                "output_length": output_length,
                 "concurrent_users": args.concurrent_users,
             },
         }

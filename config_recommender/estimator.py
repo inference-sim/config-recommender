@@ -71,6 +71,8 @@ class SyntheticBenchmarkEstimator:
         precision_bytes: int = 2,  # FP16 = 2 bytes, FP32 = 4 bytes
         memory_overhead_factor: float = 1.2,  # 20% overhead for fragmentation, etc.
         concurrent_users: int = 1,  # Number of concurrent users hitting the server at once (affects KV cache memory requirements)
+        input_length: Optional[int] = None,  # Input sequence length for BentoML estimation
+        output_length: Optional[int] = None,  # Output sequence length for BentoML estimation
     ):
         """Initialize the estimator.
 
@@ -78,10 +80,14 @@ class SyntheticBenchmarkEstimator:
             precision_bytes: Bytes per parameter (2 for FP16, 4 for FP32)
             memory_overhead_factor: Multiplier for memory overhead
             concurrent_users: Number of concurrent users hitting the server at once (affects KV cache memory requirements)
+            input_length: Input sequence length for BentoML's performance estimation (default: 1 for per-token decode)
+            output_length: Output sequence length for BentoML's performance estimation (default: 1 for per-token decode)
         """
         self.precision_bytes = precision_bytes
         self.memory_overhead_factor = memory_overhead_factor
         self.concurrent_users = concurrent_users
+        self.input_length = input_length if input_length is not None else 1
+        self.output_length = output_length if output_length is not None else 1
         
         # Initialize BentoML resource managers
         self._gpu_manager = GPUResourceManager()
@@ -269,8 +275,8 @@ class SyntheticBenchmarkEstimator:
                 model_config=bento_model_config,
                 precision=precision,
                 concurrency=self.concurrent_users,
-                input_length=1,  # Decode phase: generating one token at a time
-                output_length=1,  # Single token generation for per-token metrics
+                input_length=self.input_length,  # Input sequence length (prefill phase)
+                output_length=self.output_length,  # Output sequence length (decode phase)
                 mfu_prefill=0.45,  # Model FLOPs Utilization for prefill (typical: 0.3-0.5)
                 mfu_decode=0.30,   # Model FLOPs Utilization for decode (typical: 0.2-0.4)
                 vram_util_factor=1.0 / self.memory_overhead_factor,  # Convert our overhead to utilization
