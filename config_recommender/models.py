@@ -75,6 +75,10 @@ class ModelArchitecture:
             self._model_info = get_model_info_from_hf(self.name, self.hf_token)
             self._model_config = get_model_config_from_hf(self.name, self.hf_token)
         except Exception as e:
+            # Check if it's likely a gated model access error
+            error_msg = str(e).lower()
+            is_gated_error = any(keyword in error_msg for keyword in ['gated', 'access', 'authentication', 'token', '401', '403'])
+            
             # If fetching fails and we have manual overrides, that's okay
             if self.num_parameters is not None:
                 # Validate we have enough manual specifications
@@ -87,7 +91,7 @@ class ModelArchitecture:
                 missing = [f for f in required_fields if getattr(self, f) is None]
                 if missing:
                     raise ValueError(
-                        f"Failed to fetch model info for '{self.name}': {e}\n"
+                        f"Could not load model '{self.name}' from HuggingFace.\n"
                         f"When using manual overrides, you must provide: num_parameters, num_layers, "
                         f"hidden_size, num_attention_heads, vocab_size. Missing: {', '.join(missing)}"
                     )
@@ -95,12 +99,23 @@ class ModelArchitecture:
                 if self.num_kv_heads is None:
                     self.num_kv_heads = self.num_attention_heads
             else:
-                raise ValueError(
-                    f"Failed to fetch model info for '{self.name}': {e}\n"
-                    f"For gated models, either set HF_TOKEN environment variable or provide "
-                    f"manual parameters (num_parameters, num_layers, hidden_size, "
-                    f"num_attention_heads, vocab_size)."
-                )
+                # Provide a friendly error message
+                if is_gated_error:
+                    raise ValueError(
+                        f"Unable to access model '{self.name}' from HuggingFace.\n"
+                        f"This model may be gated and requires authentication.\n\n"
+                        f"To access gated models:\n"
+                        f"  1. Set the HF_TOKEN environment variable with your HuggingFace token, or\n"
+                        f"  2. Provide manual model parameters (num_parameters, num_layers, hidden_size, "
+                        f"num_attention_heads, vocab_size)\n\n"
+                        f"For more information, visit: https://huggingface.co/{self.name}"
+                    )
+                else:
+                    raise ValueError(
+                        f"Could not load model '{self.name}' from HuggingFace.\n"
+                        f"Please check that the model name is correct, or provide manual parameters "
+                        f"(num_parameters, num_layers, hidden_size, num_attention_heads, vocab_size)."
+                    )
 
     def get_num_parameters(self) -> float:
         """Get total number of parameters in billions."""

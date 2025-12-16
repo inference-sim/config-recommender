@@ -1,6 +1,8 @@
 """Unit tests for CLI module."""
 
 import json
+import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -117,9 +119,122 @@ def test_example_files_exist():
     models = load_models_from_json(models_file)
     assert len(models) > 0, "examples/models.json should contain at least one model"
 
-    # Check gpus.json exists and is valid
-    gpus_file = examples_dir / "gpus.json"
-    assert gpus_file.exists(), "examples/gpus.json should exist"
+    # Check custom_gpus.json exists and is valid
+    gpus_file = examples_dir / "custom_gpus.json"
+    assert gpus_file.exists(), "examples/custom_gpus.json should exist"
 
     gpus = load_gpus_from_json(gpus_file)
-    assert len(gpus) > 0, "examples/gpus.json should contain at least one GPU"
+    assert len(gpus) > 0, "examples/custom_gpus.json should contain at least one GPU"
+
+
+def test_cli_list_gpus():
+    """Test CLI --list-gpus option."""
+    result = subprocess.run(
+        [sys.executable, "-m", "config_recommender.cli", "--list-gpus"],
+        capture_output=True,
+        text=True,
+    )
+    
+    assert result.returncode == 0
+    assert "Available GPUs in the library:" in result.stdout
+    assert "H100" in result.stdout
+    assert "H200" in result.stdout
+    assert "A100-80GB" in result.stdout
+    assert "L40" in result.stdout
+
+
+def test_cli_gpu_library_selection(tmp_path):
+    """Test CLI with --gpu-library option."""
+    # Create a simple model file
+    models_data = [
+        {
+            "name": "test-model",
+            "num_parameters": 7.0,
+            "num_layers": 32,
+            "hidden_size": 4096,
+            "num_attention_heads": 32,
+            "vocab_size": 32000,
+        }
+    ]
+    
+    models_file = tmp_path / "models.json"
+    with open(models_file, "w") as f:
+        json.dump(models_data, f)
+    
+    output_file = tmp_path / "output.json"
+    
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "config_recommender.cli",
+            "--models", str(models_file),
+            "--gpu-library", "H100", "A100-80GB",
+            "--output", str(output_file),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    
+    assert result.returncode == 0
+    assert output_file.exists()
+    
+    # Check output
+    with open(output_file) as f:
+        output_data = json.load(f)
+    
+    assert "recommendations" in output_data
+    assert len(output_data["recommendations"]) > 0
+
+
+def test_cli_extend_gpus(tmp_path):
+    """Test CLI with --extend-gpus option."""
+    # Create model file
+    models_data = [
+        {
+            "name": "test-model",
+            "num_parameters": 7.0,
+            "num_layers": 32,
+            "hidden_size": 4096,
+            "num_attention_heads": 32,
+            "vocab_size": 32000,
+        }
+    ]
+    
+    models_file = tmp_path / "models.json"
+    with open(models_file, "w") as f:
+        json.dump(models_data, f)
+    
+    # Create custom GPU file
+    custom_gpus_data = [
+        {
+            "name": "Custom GPU",
+            "memory_gb": 100.0,
+            "memory_bandwidth_gb_s": 5000.0,
+            "tflops_fp16": 1000.0,
+            "tflops_fp32": 500.0,
+        }
+    ]
+    
+    custom_gpus_file = tmp_path / "custom_gpus.json"
+    with open(custom_gpus_file, "w") as f:
+        json.dump(custom_gpus_data, f)
+    
+    output_file = tmp_path / "output.json"
+    
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "config_recommender.cli",
+            "--models", str(models_file),
+            "--gpu-library", "H100",
+            "--extend-gpus", str(custom_gpus_file),
+            "--output", str(output_file),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    
+    assert result.returncode == 0
+    assert "Extended GPU list with 1 custom GPU(s)" in result.stderr

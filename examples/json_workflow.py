@@ -42,7 +42,7 @@ def main():
     # Setup paths
     examples_dir = Path(__file__).parent
     models_file = examples_dir / "models.json"
-    gpus_file = examples_dir / "gpus.json"
+    gpus_file = examples_dir / "custom_gpus.json"
     output_file = examples_dir / "output_recommendations.json"
 
     print(f"\nLoading models from: {models_file}")

@@ -75,20 +75,30 @@ streamlit run streamlit_app.py
 ### Command-Line Interface
 
 ```bash
-# Basic usage
-config-recommender --models examples/models.json --gpus examples/gpus.json
+# Using the GPU library (recommended for common GPUs)
+config-recommender --models examples/models.json --gpu-library H100 A100-80GB L40
+
+# List available GPUs in the library
+config-recommender --list-gpus
+
+# Traditional usage with custom GPU JSON file
+config-recommender --models examples/models.json --gpus examples/custom_gpus.json
+
+# Combine library GPUs with custom GPUs
+config-recommender --models examples/models.json --gpu-library H100 A100-80GB \
+    --extend-gpus examples/custom_gpus.json
 
 # With latency constraint
-config-recommender --models examples/models.json --gpus examples/gpus.json \
+config-recommender --models examples/models.json --gpu-library H100 A100-80GB \
     --latency-bound 10
 
 # Save output to file
-config-recommender --models examples/models.json --gpus examples/gpus.json \
+config-recommender --models examples/models.json --gpu-library H100 L40 \
     --output recommendations.json
 
 # Custom parameters
-config-recommender --models examples/models.json --gpus examples/gpus.json \
-    --batch-size 1 --precision fp16
+config-recommender --models examples/models.json --gpu-library H100 \
+    --precision fp16 --concurrent-users 10
 ```
 
 ### Python API
@@ -96,8 +106,9 @@ config-recommender --models examples/models.json --gpus examples/gpus.json \
 ```python
 from config_recommender import (
     ModelArchitecture,
-    GPUSpec,
     GPURecommender,
+    get_gpu_specs,
+    create_custom_gpu,
 )
 
 # Define a model using HuggingFace identifier
@@ -106,25 +117,31 @@ model = ModelArchitecture(
     name="Qwen/Qwen2.5-7B",  # HuggingFace model identifier
 )
 
-# Define available GPUs
-gpus = [
-    GPUSpec(
-        name="NVIDIA A100 80GB",
-        memory_gb=80.0,
-        memory_bandwidth_gb_s=2039.0,
-        tflops_fp16=312.0,
-        tflops_fp32=156.0,
-        cost_per_hour=3.67,
-    ),
-    GPUSpec(
-        name="NVIDIA H100 80GB",
-        memory_gb=80.0,
-        memory_bandwidth_gb_s=3350.0,
-        tflops_fp16=989.0,
-        tflops_fp32=494.5,
-        cost_per_hour=4.76,
-    ),
-]
+# Option 1: Use GPUs from the preloaded library (recommended)
+gpus = get_gpu_specs(["H100", "A100-80GB", "L40"])
+
+# Option 2: Create custom GPU specs
+custom_gpu = create_custom_gpu(
+    name="My Custom GPU",
+    memory_gb=100.0,
+    memory_bandwidth_gb_s=5000.0,
+    tflops_fp16=1000.0,
+    tflops_fp32=500.0,
+    cost_per_hour=8.0,
+)
+gpus.append(custom_gpu)
+
+# Option 3: Define GPUs manually (legacy method, still supported)
+from config_recommender import GPUSpec
+
+manual_gpu = GPUSpec(
+    name="NVIDIA A100 80GB",
+    memory_gb=80.0,
+    memory_bandwidth_gb_s=2039.0,
+    tflops_fp16=312.0,
+    tflops_fp32=156.0,
+    cost_per_hour=3.67,
+)
 
 # Get recommendation
 recommender = GPURecommender()
@@ -166,6 +183,31 @@ The recommendation engine estimates performance using:
    - Apply latency constraints if specified
    - Select GPU with highest tokens/sec
    - Use cost as tiebreaker when available
+
+### GPU Library
+
+The recommendation engine includes a preloaded library of well-known GPUs with accurate specifications:
+
+**Available GPUs:**
+- **NVIDIA H100 80GB**: High-performance GPU for demanding workloads
+- **NVIDIA H200 141GB**: Extended memory variant with superior bandwidth
+- **NVIDIA A100 80GB/40GB**: Widely-used data center GPUs
+- **NVIDIA L40 48GB**: Mid-range GPU optimized for inference
+- **NVIDIA L4 24GB**: Cost-effective option for smaller models
+- **NVIDIA V100 32GB**: Previous generation GPU
+- **NVIDIA T4 16GB**: Entry-level GPU
+
+**Using the GPU Library:**
+- **CLI**: Use `--gpu-library H100 A100-80GB L40` to select specific GPUs
+- **Python**: Use `get_gpu_specs(["H100", "A100-80GB"])` to load from library
+- **UI**: Select GPUs from dropdown menu in the Streamlit interface
+
+**Flexibility:**
+- Override library specs by creating custom GPUSpec objects
+- Extend library with custom GPUs using `--extend-gpus` (CLI) or `create_custom_gpu()` (Python)
+- Mix library and custom GPUs in the same recommendation
+
+See `examples/gpu_library_usage.py` for detailed examples.
 
 ## Input Formats
 
@@ -245,10 +287,11 @@ pytest tests/test_recommender.py
 
 See the `examples/` directory for sample model and GPU configuration files:
 - `examples/models.json`: Sample model architectures (Llama-2, Mistral)
-- `examples/gpus.json`: Sample GPU specifications (A100, H100, V100, T4, L4)
-- `examples/basic.py`: A simple, basic usage of the Python API, single model recommendation
-- `examples/advanced.py`: An advanced usage, multiple models recommendations
+- `examples/custom_gpus.json`: Sample GPU specifications (A100, H100, V100, T4, L4)
+- `examples/basic_usage.py`: A simple, basic usage of the Python API, single model recommendation
+- `examples/advanced_usage.py`: An advanced usage, multiple models recommendations
 - `examples/tensor_parallelism_example.py`: Demonstrates a model requiring TP>1
+- `examples/gpu_library_usage.py`: **NEW** - Demonstrates GPU library usage and custom GPU creation
 
 ## Contributing
 

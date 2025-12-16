@@ -6,6 +6,7 @@ import sys
 from typing import List
 
 from .estimator import SyntheticBenchmarkEstimator
+from .gpu_library import get_gpu_specs, list_available_gpus
 from .models import GPUSpec, ModelArchitecture
 from .recommender import GPURecommender
 
@@ -39,31 +40,55 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Recommend GPUs for models using example data files
-  config-recommender --models examples/models.json --gpus examples/gpus.json
+  # Use GPU library with specific GPUs
+  config-recommender --models examples/models.json --gpu-library H100 A100-80GB L40
+
+  # List available GPUs in the library
+  config-recommender --list-gpus
+
+  # Use custom GPU file
+  config-recommender --models examples/models.json --gpus examples/custom_gpus.json
+
+  # Extend GPU library with custom GPUs
+  config-recommender --models examples/models.json --gpu-library H100 A100-80GB \\
+      --extend-gpus examples/custom_gpus.json
 
   # With latency constraint and custom parameters
-  config-recommender --models examples/models.json --gpus examples/gpus.json \\
+  config-recommender --models examples/models.json --gpu-library H100 A100-80GB \\
       --latency-bound 10 --precision fp16
 
-  # With concurrent users (for multi-user server scenarios)
-  config-recommender --models examples/models.json --gpus examples/gpus.json \\
-      --concurrent-users 10
-
   # Output to file
-  config-recommender --models examples/models.json --gpus examples/gpus.json \\
+  config-recommender --models examples/models.json --gpu-library H100 A100-80GB \\
       --output recommendations.json
         """,
     )
 
     parser.add_argument(
         "--models",
-        required=True,
         help="Path to JSON file containing model architectures",
     )
 
+    # GPU specification options (mutually exclusive groups)
+    gpu_group = parser.add_mutually_exclusive_group()
+    gpu_group.add_argument(
+        "--gpus", 
+        help="Path to JSON file containing GPU specifications"
+    )
+    gpu_group.add_argument(
+        "--gpu-library",
+        nargs="+",
+        metavar="GPU",
+        help="Select GPUs from the preloaded library (e.g., H100 A100-80GB L40)",
+    )
+    gpu_group.add_argument(
+        "--list-gpus",
+        action="store_true",
+        help="List all available GPUs in the preloaded library and exit",
+    )
+
     parser.add_argument(
-        "--gpus", required=True, help="Path to JSON file containing GPU specifications"
+        "--extend-gpus",
+        help="Path to JSON file with additional custom GPUs to add to library selection",
     )
 
     parser.add_argument("--output", help="Path to output JSON file (default: stdout)")
@@ -97,16 +122,51 @@ Examples:
     args = parser.parse_args()
 
     try:
-        # Load models and GPUs
-        models = load_models_from_json(args.models)
-        gpus = load_gpus_from_json(args.gpus)
+        # Handle --list-gpus option
+        if args.list_gpus:
+            print("Available GPUs in the library:")
+            for gpu_key in list_available_gpus():
+                gpu = get_gpu_specs([gpu_key])[0]
+                print(f"  {gpu_key}: {gpu.name} ({gpu.memory_gb}GB, {gpu.tflops_fp16} TFLOPS FP16)")
+            sys.exit(0)
 
+        # Validate that models are provided for recommendation
+        if not args.models:
+            print("Error: --models is required for recommendations", file=sys.stderr)
+            parser.print_help()
+            sys.exit(1)
+
+        # Load models
+        models = load_models_from_json(args.models)
         if not models:
             print("Error: No models found in input file", file=sys.stderr)
             sys.exit(1)
 
+        # Load GPUs based on the selected option
+        gpus = []
+        if args.gpu_library:
+            # Load GPUs from library
+            try:
+                gpus = get_gpu_specs(args.gpu_library)
+            except ValueError as e:
+                print(f"Error: {e}", file=sys.stderr)
+                sys.exit(1)
+        elif args.gpus:
+            # Load GPUs from JSON file
+            gpus = load_gpus_from_json(args.gpus)
+        else:
+            print("Error: Either --gpus or --gpu-library must be specified", file=sys.stderr)
+            parser.print_help()
+            sys.exit(1)
+
+        # Extend with additional custom GPUs if specified
+        if args.extend_gpus:
+            custom_gpus = load_gpus_from_json(args.extend_gpus)
+            gpus.extend(custom_gpus)
+            print(f"Extended GPU list with {len(custom_gpus)} custom GPU(s)", file=sys.stderr)
+
         if not gpus:
-            print("Error: No GPUs found in input file", file=sys.stderr)
+            print("Error: No GPUs found or selected", file=sys.stderr)
             sys.exit(1)
 
         # Use concurrent_users for KV cache calculations (accounts for multiple concurrent requests)
