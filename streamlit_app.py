@@ -72,8 +72,10 @@ def main():
         st.session_state.gpus = []
     if "recommendations" not in st.session_state:
         st.session_state.recommendations = None
-    if "sequence_length_used" not in st.session_state:
-        st.session_state.sequence_length_used = None
+    if "input_length_used" not in st.session_state:
+        st.session_state.input_length_used = None
+    if "output_length_used" not in st.session_state:
+        st.session_state.output_length_used = None
 
     # Sidebar for configuration
     with st.sidebar:
@@ -96,14 +98,29 @@ def main():
             help="Number of concurrent users (affects KV cache memory)",
         )
 
-        sequence_length = st.number_input(
-            "Sequence Length (tokens)",
+        input_length = st.number_input(
+            "Input Length (tokens)",
             min_value=0,
             value=0,
             step=128,
-            help="Total input + output sequence length for KV cache estimation (0 = use each model's max_sequence_length)",
+            help="Input sequence length for prefill phase (0 = defaults to 1 for per-token decode estimation)",
         )
-        sequence_length_param = sequence_length if sequence_length > 0 else None
+        input_length_param = input_length if input_length > 0 else None
+
+        output_length = st.number_input(
+            "Output Length (tokens)",
+            min_value=0,
+            value=0,
+            step=128,
+            help="Output sequence length for decode phase (0 = defaults to 1 for per-token decode estimation)",
+        )
+        output_length_param = output_length if output_length > 0 else None
+
+        # Calculate sequence_length for KV cache from input + output
+        if input_length_param is not None and output_length_param is not None:
+            sequence_length_param = input_length_param + output_length_param
+        else:
+            sequence_length_param = None
 
         memory_overhead = st.slider(
             "Memory Overhead Factor",
@@ -468,14 +485,17 @@ def render_recommendations_tab(
                     precision_bytes=precision_bytes,
                     memory_overhead_factor=memory_overhead,
                     concurrent_users=concurrent_users,
+                    input_length=input_length_param,
+                    output_length=output_length_param,
                 )
                 recommender = GPURecommender(estimator=estimator, latency_bound_ms=latency_bound_ms)
 
                 results = recommender.recommend_for_models(
-                    st.session_state.models, st.session_state.gpus, sequence_length=sequence_length
+                    st.session_state.models, st.session_state.gpus, sequence_length=sequence_length_param
                 )
                 st.session_state.recommendations = results
-                st.session_state.sequence_length_used = sequence_length
+                st.session_state.input_length_used = input_length_param
+                st.session_state.output_length_used = output_length_param
                 st.success("✅ Recommendations generated!")
             except Exception as e:
                 st.error(f"❌ Error generating recommendations: {str(e)}")
@@ -592,14 +612,20 @@ def display_recommendations(recommendations: List):
                 # Get the model to show its sequence length
                 model = next((m for m in st.session_state.models if m.name == rec.model_name), None)
                 
-                # Determine sequence length used
-                if st.session_state.sequence_length_used is not None:
-                    seq_len_used = st.session_state.sequence_length_used
-                    seq_len_display = f"{seq_len_used} (custom)"
+                # Determine sequence lengths used
+                if st.session_state.input_length_used is not None and st.session_state.output_length_used is not None:
+                    input_len_display = f"{st.session_state.input_length_used} (custom)"
+                    output_len_display = f"{st.session_state.output_length_used} (custom)"
+                    seq_len_used = st.session_state.input_length_used + st.session_state.output_length_used
+                    seq_len_display = f"{seq_len_used} ({st.session_state.input_length_used} input + {st.session_state.output_length_used} output)"
                 elif model:
                     seq_len_used = model.get_max_sequence_length()
-                    seq_len_display = f"{seq_len_used} (model default)"
+                    input_len_display = "1 (default)"
+                    output_len_display = "1 (default)"
+                    seq_len_display = f"{seq_len_used} (model default for KV cache)"
                 else:
+                    input_len_display = "Unknown"
+                    output_len_display = "Unknown"
                     seq_len_display = "Unknown"
                 
                 # Performance metrics
@@ -622,8 +648,15 @@ def display_recommendations(recommendations: List):
                     )
 
                 # Sequence length display
-                st.markdown(f"**Sequence Length Used:** {seq_len_display}")
-                st.caption("This sequence length is used for estimating KV cache memory requirements.")
+                st.markdown("**Workload Configuration:**")
+                config_col1, config_col2, config_col3 = st.columns(3)
+                with config_col1:
+                    st.write(f"- Input Length: {input_len_display}")
+                with config_col2:
+                    st.write(f"- Output Length: {output_len_display}")
+                with config_col3:
+                    st.write(f"- KV Cache Seq Len: {seq_len_display}")
+                st.caption("Input/output lengths are used for performance estimation; KV cache sequence length determines memory requirements.")
 
                 # Memory breakdown
                 st.markdown("**Memory Breakdown (per GPU):**")

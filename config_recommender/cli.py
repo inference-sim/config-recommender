@@ -111,12 +111,6 @@ Examples:
     )
 
     parser.add_argument(
-        "--sequence-length",
-        type=int,
-        help="DEPRECATED: Use --input-length and --output-length instead. Total sequence length for KV cache calculation (default: use model max_sequence_length)",
-    )
-
-    parser.add_argument(
         "--input-length",
         type=int,
         help="Input sequence length in tokens (for prefill phase). If not specified, defaults to 1 for per-token decode estimation",
@@ -186,14 +180,12 @@ Examples:
             sys.exit(1)
 
         # Handle input_length and output_length parameters
-        # For backward compatibility, if sequence_length is provided but not input/output, use it
         input_length = args.input_length
         output_length = args.output_length
         
-        # Calculate sequence_length for KV cache if not provided
-        # If input/output are specified, use their sum; otherwise use the explicit sequence_length
-        kv_sequence_length = args.sequence_length
-        if kv_sequence_length is None and input_length is not None and output_length is not None:
+        # Calculate sequence_length for KV cache from input/output lengths
+        kv_sequence_length = None
+        if input_length is not None and output_length is not None:
             kv_sequence_length = input_length + output_length
 
         # Use concurrent_users for KV cache calculations (accounts for multiple concurrent requests)
