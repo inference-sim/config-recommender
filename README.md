@@ -6,6 +6,8 @@ GPU recommendation engine for ML inference with synthetic benchmark estimation.
 
 Config Recommender is a Python library that recommends optimal GPU configurations for running machine learning models, particularly large language models (LLMs). It uses synthetic benchmark estimation based on model architecture parameters and GPU specifications to predict performance without requiring actual hardware testing.
 
+**Note**: This repository can be used standalone or as a submodule within [llm-d-benchmark](https://github.com/llm-d/llm-d-benchmark). See [SUBMODULE_INTEGRATION.md](SUBMODULE_INTEGRATION.md) for integration instructions.
+
 ## Features
 
 - **Deterministic Synthetic Benchmarking**: Estimates performance using architecture-derived computations (FLOPs, memory footprints)
@@ -18,7 +20,9 @@ Config Recommender is a Python library that recommends optimal GPU configuration
 
 ## Installation
 
-### Setting up a Virtual Environment
+### Standalone Installation
+
+#### Setting up a Virtual Environment
 
 It's recommended to use a virtual environment to avoid dependency conflicts:
 
@@ -36,7 +40,7 @@ source .venv/bin/activate
 pip install --upgrade pip
 ```
 
-### Installing the Package
+#### Installing the Package
 
 ```bash
 # Install core dependencies
@@ -50,6 +54,18 @@ pip install -e ".[dev]"
 ```
 
 The project uses modern Python packaging with `pyproject.toml`. Dependencies are also available in `requirements.txt` for compatibility.
+
+### Installation as a Submodule
+
+If you're using this as a submodule in [llm-d-benchmark](https://github.com/llm-d/llm-d-benchmark):
+
+```bash
+# From llm-d-benchmark root directory
+pip install ./config_explorer
+pip install ./config-recommender
+```
+
+For detailed submodule integration instructions, see [SUBMODULE_INTEGRATION.md](SUBMODULE_INTEGRATION.md).
 
 ## Quick Start
 

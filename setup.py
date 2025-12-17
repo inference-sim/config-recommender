@@ -1,9 +1,35 @@
 """Setup configuration for config_recommender package."""
 
+import os
+from pathlib import Path
 from setuptools import setup, find_packages
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
+
+# Detect if we're being installed as a submodule in llm-d-benchmark
+# This checks if ../config_explorer exists (sibling directory in parent repo)
+parent_dir = Path(__file__).parent.parent
+config_explorer_path = parent_dir / "config_explorer"
+is_submodule = config_explorer_path.exists() and (config_explorer_path / "pyproject.toml").exists()
+
+# Configure dependencies based on installation mode
+if is_submodule or os.environ.get("CONFIG_RECOMMENDER_SUBMODULE_MODE") == "1":
+    # Submodule mode: config_explorer should be installed from local path
+    # The parent repository (llm-d-benchmark) should handle installing config_explorer
+    install_requires = [
+        "llm-optimizer @ git+https://github.com/bentoml/llm-optimizer.git",
+        "streamlit>=1.28.0",
+        "pandas>=2.0.0",
+    ]
+else:
+    # Standalone mode: install config_explorer from git
+    install_requires = [
+        "config_explorer @ git+https://github.com/llm-d/llm-d-benchmark.git#subdirectory=config_explorer",
+        "llm-optimizer @ git+https://github.com/bentoml/llm-optimizer.git",
+        "streamlit>=1.28.0",
+        "pandas>=2.0.0",
+    ]
 
 setup(
     name="config-recommender",
@@ -14,9 +40,7 @@ setup(
     long_description_content_type="text/markdown",
     packages=find_packages(),
     python_requires=">=3.11",
-    install_requires=[
-        "config_explorer @ git+https://github.com/llm-d/llm-d-benchmark.git#subdirectory=config_explorer",
-    ],
+    install_requires=install_requires,
     extras_require={
         "dev": [
             "pytest>=7.0.0",
