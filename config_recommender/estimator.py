@@ -41,6 +41,8 @@ class PerformanceEstimate:
         tokens_per_second: Estimated throughput in tokens/second
         intertoken_latency_ms: Estimated inter-token latency in ms
             (time per token during generation)
+        ttft_ms: Time to first token in ms (prefill latency)
+        e2e_latency_s: End-to-end latency in seconds
         memory_required_gb: Total memory required in GB (per GPU)
         memory_weights_gb: Memory for model weights in GB (per GPU)
         memory_kv_cache_gb: Memory for KV cache in GB (per GPU)
@@ -51,6 +53,8 @@ class PerformanceEstimate:
 
     tokens_per_second: float
     intertoken_latency_ms: float
+    ttft_ms: float
+    e2e_latency_s: float
     memory_required_gb: float
     memory_weights_gb: float
     memory_kv_cache_gb: float
@@ -280,8 +284,11 @@ class SyntheticBenchmarkEstimator:
             )
             
             # Extract results from BentoML's PerformanceResult
+            # Use exactly what BentoML provides: Throughput, TTFT, ITL, and E2E latency
             tokens_per_second = bento_result.output_throughput_tps
             intertoken_latency_ms = bento_result.itl_ms
+            ttft_ms = bento_result.ttft_ms
+            e2e_latency_s = bento_result.e2e_latency_s
             
             # Calculate memory breakdown for compatibility and accuracy
             # We use our own memory calculation because it accounts for the specific sequence_length
@@ -341,10 +348,27 @@ class SyntheticBenchmarkEstimator:
             intertoken_latency_ms = (
                 (1000.0 / tokens_per_second) if tokens_per_second > 0 else float("inf")
             )
+            
+            # For fallback calculation, estimate TTFT and E2E latency
+            # TTFT is the prefill time for input_length tokens
+            # E2E latency is prefill + decode time for output_length tokens
+            if tokens_per_second > 0:
+                # Prefill is typically faster due to parallel processing
+                # Use a simplified estimate: prefill time ≈ input_length / (tokens_per_second * prefill_speedup)
+                prefill_speedup = 2.0  # Prefill is typically ~2x faster than decode
+                ttft_ms = (self.input_length / (tokens_per_second * prefill_speedup)) * 1000.0
+                # E2E = prefill time + decode time
+                decode_time_s = self.output_length / tokens_per_second
+                e2e_latency_s = (ttft_ms / 1000.0) + decode_time_s
+            else:
+                ttft_ms = float("inf")
+                e2e_latency_s = float("inf")
 
         return PerformanceEstimate(
             tokens_per_second=tokens_per_second,
             intertoken_latency_ms=intertoken_latency_ms,
+            ttft_ms=ttft_ms,
+            e2e_latency_s=e2e_latency_s,
             memory_required_gb=memory_required_gb,
             memory_weights_gb=weights_per_gpu,
             memory_kv_cache_gb=kv_cache_per_gpu,
