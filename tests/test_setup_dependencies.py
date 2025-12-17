@@ -7,6 +7,9 @@ import tempfile
 import shutil
 from pathlib import Path
 
+# Constants for repository URLs (should match setup.py)
+LLM_D_BENCHMARK_REPO = "https://github.com/llm-d/llm-d-benchmark.git"
+
 
 def get_install_requires(setup_dir):
     """Extract install_requires from setup.py without actually running setup"""
@@ -58,7 +61,7 @@ def test_standalone_dependencies():
     
     # Check that config_explorer is installed from git
     has_config_explorer = any('config_explorer' in dep for dep in install_requires)
-    has_git_url = any('git+https://github.com/llm-d/llm-d-benchmark.git' in dep for dep in install_requires)
+    has_git_url = any(f'git+{LLM_D_BENCHMARK_REPO}' in dep for dep in install_requires)
     
     assert has_config_explorer, "Should include config_explorer in standalone mode"
     assert has_git_url, "Should install config_explorer from git in standalone mode"

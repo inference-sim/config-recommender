@@ -4,6 +4,10 @@ import os
 from pathlib import Path
 from setuptools import setup, find_packages
 
+# Git repository URLs (centralized for easy maintenance)
+LLM_D_BENCHMARK_REPO = "https://github.com/llm-d/llm-d-benchmark.git"
+LLM_OPTIMIZER_REPO = "https://github.com/bentoml/llm-optimizer.git"
+
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
@@ -18,15 +22,15 @@ if is_submodule or os.environ.get("CONFIG_RECOMMENDER_SUBMODULE_MODE") == "1":
     # Submodule mode: config_explorer should be installed from local path
     # The parent repository (llm-d-benchmark) should handle installing config_explorer
     install_requires = [
-        "llm-optimizer @ git+https://github.com/bentoml/llm-optimizer.git",
+        f"llm-optimizer @ git+{LLM_OPTIMIZER_REPO}",
         "streamlit>=1.28.0",
         "pandas>=2.0.0",
     ]
 else:
     # Standalone mode: install config_explorer from git
     install_requires = [
-        "config_explorer @ git+https://github.com/llm-d/llm-d-benchmark.git#subdirectory=config_explorer",
-        "llm-optimizer @ git+https://github.com/bentoml/llm-optimizer.git",
+        f"config_explorer @ git+{LLM_D_BENCHMARK_REPO}#subdirectory=config_explorer",
+        f"llm-optimizer @ git+{LLM_OPTIMIZER_REPO}",
         "streamlit>=1.28.0",
         "pandas>=2.0.0",
     ]
