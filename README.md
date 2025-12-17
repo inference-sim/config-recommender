@@ -10,7 +10,7 @@ Config Recommender is a Python library that recommends optimal GPU configuration
 
 - **Deterministic Synthetic Benchmarking**: Estimates performance using architecture-derived computations (FLOPs, memory footprints)
 - **Memory Analysis**: Calculates memory requirements for weights, KV cache, and activations (WIP)
-- **Performance Prediction**: Estimates throughput (tokens/sec) and latency (ms/token) for each GPU
+- **Performance Prediction**: Estimates throughput (tokens/sec), inter-token latency (ms/token), TTFT (ms), and E2E latency (s) for each GPU
 - **Smart GPU Selection**: Filters compatible GPUs and selects optimal based on customizable objectives
 - **Clean Python API**: Easy-to-use programmatic interface
 - **CLI Tool**: Command-line interface for quick recommendations
@@ -150,6 +150,8 @@ result = recommender.recommend_gpu(model, gpus)
 print(f"Recommended GPU: {result.recommended_gpu}")
 print(f"Throughput: {result.performance.tokens_per_second:.2f} tokens/sec")
 print(f"Latency: {result.performance.intertoken_latency_ms:.2f} ms/token")
+print(f"TTFT: {result.performance.ttft_ms:.2f} ms")
+print(f"E2E Latency: {result.performance.e2e_latency_s:.4f} s")
 print(f"Reasoning: {result.reasoning}")
 ```
 
@@ -262,6 +264,8 @@ export HF_TOKEN=your_huggingface_token
       "performance": {
         "tokens_per_second": 1234.56,
         "intertoken_latency_ms": 0.81,
+        "ttft_ms": 3.58,
+        "e2e_latency_s": 0.0072,
         "memory_required_gb": 18.5,
         "fits_in_memory": true
       },
