@@ -170,7 +170,6 @@ def main():
                 f"""
                 **Current Configuration:**
                 - Precision: {precision} ({precision_bytes} bytes/param)
-                - Concurrent Users: {concurrent_users}
                 - Workload: {seq_display}
                 - Memory Overhead: {memory_overhead}x
                 - Latency Bound: {latency_bound_ms if latency_bound_ms else 'None'}
