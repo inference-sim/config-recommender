@@ -32,6 +32,12 @@ from .models import GPUSpec, ModelArchitecture
 # For TP=2: 5% overhead, TP=4: 15% overhead, TP=8: 35% overhead
 TP_OVERHEAD_PER_RANK = 0.05
 
+# Prefill speedup factor for fallback estimation
+# Prefill phase is typically faster than decode due to parallel processing of tokens
+# This is a conservative estimate used only when BentoML estimation is not available
+# Typical range: 1.5-3.0x faster than decode, depending on hardware and batch size
+PREFILL_SPEEDUP_FACTOR = 2.0
+
 
 @dataclass
 class PerformanceEstimate:
@@ -350,18 +356,22 @@ class SyntheticBenchmarkEstimator:
             )
             
             # For fallback calculation, estimate TTFT and E2E latency
-            # TTFT is the prefill time for input_length tokens
-            # E2E latency is prefill + decode time for output_length tokens
+            # NOTE: This is a simplified estimation used only for GPUs not supported by BentoML
+            # Real-world prefill behavior is more complex and depends on:
+            # - Hardware parallelism (tensor cores, memory bandwidth)
+            # - Batch size and sequence length
+            # - Attention mechanism implementation
+            # These estimates should be treated as rough approximations
             if tokens_per_second > 0:
-                # Prefill is typically faster due to parallel processing
-                # Use a simplified estimate: prefill time ≈ input_length / (tokens_per_second * prefill_speedup)
-                prefill_speedup = 2.0  # Prefill is typically ~2x faster than decode
-                ttft_ms = (self.input_length / (tokens_per_second * prefill_speedup)) * 1000.0
-                # E2E = prefill time + decode time
+                # TTFT is the prefill time for input_length tokens
+                # Prefill is faster due to parallel token processing vs sequential decode
+                ttft_ms = (self.input_length / (tokens_per_second * PREFILL_SPEEDUP_FACTOR)) * 1000.0
+                # E2E latency = prefill time + decode time for all output tokens
                 decode_time_s = self.output_length / tokens_per_second
                 e2e_latency_s = (ttft_ms / 1000.0) + decode_time_s
             else:
                 ttft_ms = float("inf")
+                e2e_latency_s = float("inf")
                 e2e_latency_s = float("inf")
 
         return PerformanceEstimate(
