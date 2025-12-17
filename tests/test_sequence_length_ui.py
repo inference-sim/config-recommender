@@ -39,7 +39,7 @@ def test_gpu():
 
 def test_sequence_length_default(test_model, test_gpu):
     """Test that default sequence length uses model's max_sequence_length."""
-    estimator = SyntheticBenchmarkEstimator(precision_bytes=2, concurrent_users=1)
+    estimator = SyntheticBenchmarkEstimator(precision_bytes=2)
     recommender = GPURecommender(estimator=estimator)
     
     # When sequence_length is None, should use model's max_sequence_length (2048)
@@ -47,14 +47,14 @@ def test_sequence_length_default(test_model, test_gpu):
     
     assert result.recommended_gpu is not None
     assert result.performance is not None
-    # With 2048 tokens and 1 user, KV cache should be relatively small
+    # With 2048 tokens and batch_size=1, KV cache should be relatively small
     kv_cache_default = result.performance.memory_kv_cache_gb
     assert kv_cache_default > 0
 
 
 def test_sequence_length_custom(test_model, test_gpu):
     """Test that custom sequence length affects KV cache memory."""
-    estimator = SyntheticBenchmarkEstimator(precision_bytes=2, concurrent_users=1)
+    estimator = SyntheticBenchmarkEstimator(precision_bytes=2)
     recommender = GPURecommender(estimator=estimator)
     
     # Test with custom sequence length (double the default)
@@ -68,7 +68,7 @@ def test_sequence_length_custom(test_model, test_gpu):
 
 def test_sequence_length_scaling(test_model, test_gpu):
     """Test that KV cache scales linearly with sequence length."""
-    estimator = SyntheticBenchmarkEstimator(precision_bytes=2, concurrent_users=1)
+    estimator = SyntheticBenchmarkEstimator(precision_bytes=2)
     recommender = GPURecommender(estimator=estimator)
     
     # Get results for two different sequence lengths
@@ -86,7 +86,7 @@ def test_sequence_length_scaling(test_model, test_gpu):
 
 def test_sequence_length_affects_total_memory(test_model, test_gpu):
     """Test that sequence length affects total memory requirement."""
-    estimator = SyntheticBenchmarkEstimator(precision_bytes=2, concurrent_users=1)
+    estimator = SyntheticBenchmarkEstimator(precision_bytes=2)
     recommender = GPURecommender(estimator=estimator)
     
     result_short = recommender.recommend_gpu(test_model, [test_gpu], sequence_length=512)
@@ -101,7 +101,7 @@ def test_sequence_length_affects_total_memory(test_model, test_gpu):
 
 def test_sequence_length_with_recommend_for_models(test_model, test_gpu):
     """Test sequence length works with recommend_for_models."""
-    estimator = SyntheticBenchmarkEstimator(precision_bytes=2, concurrent_users=1)
+    estimator = SyntheticBenchmarkEstimator(precision_bytes=2)
     recommender = GPURecommender(estimator=estimator)
     
     # Test with custom sequence length for batch recommendation
@@ -114,7 +114,7 @@ def test_sequence_length_with_recommend_for_models(test_model, test_gpu):
 
 def test_sequence_length_zero_uses_default(test_model, test_gpu):
     """Test that sequence_length=0 or None uses model default."""
-    estimator = SyntheticBenchmarkEstimator(precision_bytes=2, concurrent_users=1)
+    estimator = SyntheticBenchmarkEstimator(precision_bytes=2)
     recommender = GPURecommender(estimator=estimator)
     
     result_none = recommender.recommend_gpu(test_model, [test_gpu], sequence_length=None)

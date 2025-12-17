@@ -63,7 +63,6 @@ def test_estimator_initialization():
     """Test estimator initialization."""
     estimator = SyntheticBenchmarkEstimator()
     assert estimator.precision_bytes == 2
-    assert estimator.concurrent_users == 1
 
     estimator_fp32 = SyntheticBenchmarkEstimator(precision_bytes=4)
     assert estimator_fp32.precision_bytes == 4
