@@ -19,6 +19,14 @@ This directory contains example files and scripts demonstrating how to use the G
   - Sequence length impact
   - Cost-performance analysis
 - **`json_workflow.py`**: Example of loading from JSON files and saving results
+- **`model_selection.py`**: Model selection and comparison scenarios:
+  - Comparing multiple models on the same GPU
+  - Evaluating performance across different hardware
+  - Quality vs performance trade-offs
+  - Latency-sensitive applications
+  - Multi-model deployment strategies
+- **`tensor_parallelism_example.py`**: Demonstrates large models requiring tensor parallelism
+- **`gpu_library_usage.py`**: Using the preloaded GPU library and custom GPU specifications
 
 ## Running Examples
 
@@ -52,6 +60,19 @@ This demonstrates a complete end-to-end workflow:
 1. Load models and GPUs from JSON files
 2. Generate recommendations
 3. Save results to a JSON file
+
+### Model Selection
+
+```bash
+python examples/model_selection.py
+```
+
+This demonstrates real-world model selection scenarios:
+1. Comparing multiple models on the same GPU hardware
+2. Evaluating performance improvements with newer GPUs
+3. Making quality vs performance trade-off decisions
+4. Identifying models for latency-sensitive applications
+5. Planning multi-model deployment strategies
 
 ### CLI Usage
 
