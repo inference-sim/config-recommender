@@ -293,7 +293,8 @@ See the `examples/` directory for sample model and GPU configuration files:
 - `examples/basic_usage.py`: A simple, basic usage of the Python API, single model recommendation
 - `examples/advanced_usage.py`: An advanced usage, multiple models recommendations
 - `examples/tensor_parallelism_example.py`: Demonstrates a model requiring TP>1
-- `examples/gpu_library_usage.py`: **NEW** - Demonstrates GPU library usage and custom GPU creation
+- `examples/gpu_library_usage.py`: Demonstrates GPU library usage and custom GPU creation
+- `examples/model_selection.py`: **NEW** - Real-world model selection scenarios and comparison strategies
 
 ## Contributing
 
