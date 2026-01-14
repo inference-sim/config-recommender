@@ -16,5 +16,5 @@
   "companyAnnouncements": [
     "Example repository to play with Claude Code using LiteLLM Gateway as a proxy"
   ],
-  "model": "default"
+  "model": "sonnet"
 }
