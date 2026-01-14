@@ -1,0 +1,1 @@
+Use the `git` command to create a new PR in the remote the user asked for.
