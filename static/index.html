@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPU Recommender - AI Infrastructure Optimization</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <div class="logo">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                        <rect width="32" height="32" rx="8" fill="url(#gradient)"/>
+                        <path d="M8 12H14V18H8V12ZM18 12H24V18H18V12ZM8 20H14V26H8V20ZM18 20H24V26H18V20Z" fill="white"/>
+                        <defs>
+                            <linearGradient id="gradient" x1="0" y1="0" x2="32" y2="32">
+                                <stop offset="0%" stop-color="#667eea"/>
+                                <stop offset="100%" stop-color="#764ba2"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <span>GPU Recommender</span>
+                </div>
+            </div>
+            <div class="nav-links">
+                <a href="http://localhost:8000/docs" target="_blank" class="nav-link">API Documentation</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">Optimize Your AI Infrastructure</h1>
+            <p class="hero-subtitle">Get intelligent GPU recommendations for your ML models with synthetic performance analysis</p>
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="models-count">0</div>
+                    <div class="stat-label">Models Added</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="gpus-count">0</div>
+                    <div class="stat-label">GPUs Available</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="recommendations-count">0</div>
+                    <div class="stat-label">Recommendations</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="container">
+        <!-- Workflow Section -->
+        <section id="workflow" class="workflow-section">
+            <div class="workflow-grid">
+                <!-- Step 1: Add Models -->
+                <div class="workflow-card">
+                    <div class="card-header">
+                        <div class="step-badge">Step 1</div>
+                        <h2 class="card-title">Add ML Models</h2>
+                        <p class="card-subtitle">Configure your models from HuggingFace or custom specifications</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="input-tabs">
+                            <button class="input-tab active" data-target="model-manual">Manual</button>
+                            <button class="input-tab" data-target="model-library">Library</button>
+                            <button class="input-tab" data-target="model-json">JSON</button>
+                        </div>
+
+                        <!-- Manual Input -->
+                        <div id="model-manual" class="input-panel active">
+                            <div class="form-field">
+                                <label class="field-label">HuggingFace Model ID</label>
+                                <input type="text" id="model-name" class="field-input" placeholder="e.g., meta-llama/Llama-3.1-8B">
+                            </div>
+
+                            <div class="collapsible">
+                                <button class="collapsible-trigger" type="button">
+                                    <span>Advanced Options (for gated models)</span>
+                                    <svg class="collapsible-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/>
+                                    </svg>
+                                </button>
+                                <div class="collapsible-content">
+                                    <div class="form-grid">
+                                        <div class="form-field">
+                                            <label class="field-label">Parameters (B)</label>
+                                            <input type="number" id="model-params" class="field-input" value="0" step="0.1">
+                                        </div>
+                                        <div class="form-field">
+                                            <label class="field-label">Layers</label>
+                                            <input type="number" id="model-layers" class="field-input" value="0">
+                                        </div>
+                                        <div class="form-field">
+                                            <label class="field-label">Hidden Size</label>
+                                            <input type="number" id="model-hidden" class="field-input" value="0">
+                                        </div>
+                                        <div class="form-field">
+                                            <label class="field-label">Attention Heads</label>
+                                            <input type="number" id="model-heads" class="field-input" value="0">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button id="add-model-btn" class="btn btn-primary btn-block">
+                                <span>Add Model</span>
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"/>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Library Input -->
+                        <div id="model-library" class="input-panel">
+                            <div class="info-banner">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"/>
+                                </svg>
+                                <span>Popular models coming soon - use manual entry for now</span>
+                            </div>
+                        </div>
+
+                        <!-- JSON Input -->
+                        <div id="model-json" class="input-panel">
+                            <div class="upload-area" id="model-upload-area">
+                                <input type="file" id="model-json-file" accept=".json" hidden>
+                                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                                    <path d="M24 8V28M24 8L16 16M24 8L32 16" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M8 28V36C8 38.2091 9.79086 40 12 40H36C38.2091 40 40 38.2091 40 36V28" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                                </svg>
+                                <p class="upload-text">Drop JSON file here or click to browse</p>
+                                <p class="upload-hint">Format: [{"name": "model/id"}]</p>
+                            </div>
+                        </div>
+
+                        <!-- Models List -->
+                        <div class="items-section">
+                            <div class="items-header">
+                                <h3 class="items-title">Added Models</h3>
+                                <button id="clear-models-btn" class="btn-text">Clear All</button>
+                            </div>
+                            <div id="models-list" class="items-list">
+                                <div class="empty-state">
+                                    <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                                        <circle cx="32" cy="32" r="30" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4"/>
+                                        <path d="M32 20V44M20 32H44" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    </svg>
+                                    <p>No models added yet</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Add GPUs -->
+                <div class="workflow-card">
+                    <div class="card-header">
+                        <div class="step-badge">Step 2</div>
+                        <h2 class="card-title">Select GPUs</h2>
+                        <p class="card-subtitle">Choose from our GPU library or add custom specifications</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="input-tabs">
+                            <button class="input-tab active" data-target="gpu-library">Library</button>
+                            <button class="input-tab" data-target="gpu-manual">Manual</button>
+                            <button class="input-tab" data-target="gpu-json">JSON</button>
+                        </div>
+
+                        <!-- Library Input -->
+                        <div id="gpu-library" class="input-panel active">
+                            <div class="form-field">
+                                <label class="field-label">Select GPUs from Library</label>
+                                <div id="gpu-library-grid" class="gpu-grid">
+                                    <!-- Populated by JavaScript -->
+                                </div>
+                            </div>
+                            <button id="add-library-gpus-btn" class="btn btn-primary btn-block">
+                                <span>Add Selected GPUs</span>
+                            </button>
+                        </div>
+
+                        <!-- Manual Input -->
+                        <div id="gpu-manual" class="input-panel">
+                            <div class="form-field">
+                                <label class="field-label">GPU Name</label>
+                                <input type="text" id="gpu-name" class="field-input" placeholder="e.g., NVIDIA H100 80GB">
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-field">
+                                    <label class="field-label">Memory (GB)</label>
+                                    <input type="number" id="gpu-memory" class="field-input" value="80" step="1">
+                                </div>
+                                <div class="form-field">
+                                    <label class="field-label">Bandwidth (GB/s)</label>
+                                    <input type="number" id="gpu-bandwidth" class="field-input" value="2039" step="1">
+                                </div>
+                                <div class="form-field">
+                                    <label class="field-label">TFLOPS FP16</label>
+                                    <input type="number" id="gpu-tflops-fp16" class="field-input" value="312" step="1">
+                                </div>
+                                <div class="form-field">
+                                    <label class="field-label">TFLOPS FP32</label>
+                                    <input type="number" id="gpu-tflops-fp32" class="field-input" value="156" step="1">
+                                </div>
+                                <div class="form-field">
+                                    <label class="field-label">Cost ($/hour)</label>
+                                    <input type="number" id="gpu-cost" class="field-input" value="3.67" step="0.01">
+                                </div>
+                            </div>
+                            <button id="add-gpu-btn" class="btn btn-primary btn-block">Add GPU</button>
+                        </div>
+
+                        <!-- JSON Input -->
+                        <div id="gpu-json" class="input-panel">
+                            <div class="upload-area" id="gpu-upload-area">
+                                <input type="file" id="gpu-json-file" accept=".json" hidden>
+                                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                                    <path d="M24 8V28M24 8L16 16M24 8L32 16" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M8 28V36C8 38.2091 9.79086 40 12 40H36C38.2091 40 40 38.2091 40 36V28" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                                </svg>
+                                <p class="upload-text">Drop JSON file here or click to browse</p>
+                                <p class="upload-hint">Format: [{"name": "...", "memory_gb": 80, ...}]</p>
+                            </div>
+                        </div>
+
+                        <!-- GPUs List -->
+                        <div class="items-section">
+                            <div class="items-header">
+                                <h3 class="items-title">Added GPUs</h3>
+                                <button id="clear-gpus-btn" class="btn-text">Clear All</button>
+                            </div>
+                            <div id="gpus-list" class="items-list">
+                                <div class="empty-state">
+                                    <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                                        <circle cx="32" cy="32" r="30" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4"/>
+                                        <path d="M32 20V44M20 32H44" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    </svg>
+                                    <p>No GPUs added yet</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Configure -->
+                <div class="workflow-card">
+                    <div class="card-header">
+                        <div class="step-badge">Step 3</div>
+                        <h2 class="card-title">Configure Parameters</h2>
+                        <p class="card-subtitle">Fine-tune performance estimation settings</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="config-grid">
+                            <div class="config-item">
+                                <label class="field-label">Precision</label>
+                                <div class="segmented-control">
+                                    <input type="radio" name="precision" id="precision-fp16" value="FP16" checked hidden>
+                                    <label for="precision-fp16" class="segment">FP16</label>
+                                    <input type="radio" name="precision" id="precision-fp32" value="FP32" hidden>
+                                    <label for="precision-fp32" class="segment">FP32</label>
+                                </div>
+                            </div>
+
+                            <div class="config-item">
+                                <label class="field-label">Input Length (tokens)</label>
+                                <input type="number" id="input-length" class="field-input" value="512" step="128" min="1">
+                                <span class="field-hint">Input sequence length for prefill phase</span>
+                            </div>
+
+                            <div class="config-item">
+                                <label class="field-label">Output Length (tokens)</label>
+                                <input type="number" id="output-length" class="field-input" value="256" step="128" min="1">
+                                <span class="field-hint">Output sequence length for decode phase</span>
+                            </div>
+
+                            <div class="config-item">
+                                <label class="field-label">
+                                    Memory Overhead Factor
+                                    <span class="field-value" id="memory-overhead-value">1.20x</span>
+                                </label>
+                                <input type="range" id="memory-overhead" class="slider" min="1.0" max="2.0" value="1.2" step="0.05">
+                                <div class="slider-labels">
+                                    <span>1.0x</span>
+                                    <span>2.0x</span>
+                                </div>
+                            </div>
+
+                            <div class="config-item">
+                                <label class="field-label">Max Latency (ms/token)</label>
+                                <input type="number" id="latency-bound" class="field-input" value="0" step="0.1">
+                                <span class="field-hint">0 = no limit</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Generate Recommendations Section -->
+        <section class="generate-section">
+            <div id="recommendation-warning" class="warning-banner hidden">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"/>
+                </svg>
+                <span>Please add at least one model and one GPU to continue</span>
+            </div>
+
+            <button id="generate-recommendations" class="btn btn-primary btn-hero">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M13 10V3L4 14H11V21L20 10H13Z" fill="currentColor"/>
+                </svg>
+                <span>Generate Recommendations</span>
+            </button>
+
+            <div id="recommendations-loading" class="loading-state hidden">
+                <div class="spinner-ring"></div>
+                <p>Analyzing your configuration...</p>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section id="results" class="results-section hidden">
+            <div class="section-header">
+                <h2 class="section-title">Your Recommendations</h2>
+                <div class="section-actions">
+                    <button id="export-json" class="btn btn-secondary">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z"/>
+                        </svg>
+                        <span>Export JSON</span>
+                    </button>
+                    <button id="export-csv" class="btn btn-secondary">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z"/>
+                        </svg>
+                        <span>Export CSV</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="recommendations-summary" class="recommendations-grid">
+                <!-- Populated by JavaScript -->
+            </div>
+
+            <div id="recommendations-details" class="details-grid">
+                <!-- Populated by JavaScript -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
