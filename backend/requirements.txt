@@ -1,0 +1,22 @@
+# FastAPI and server dependencies
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+pydantic==2.10.3
+pydantic-settings==2.6.1
+
+# CORS middleware (included in fastapi but explicitly listed for clarity)
+# python-multipart==0.0.18  # Uncomment if you need form data/file uploads
+
+# Config Recommender library dependencies
+# Install the config_recommender package from parent directory
+# pip install -e ..
+
+# Core dependencies from config_recommender
+config-explorer @ git+https://github.com/llm-d/llm-d-benchmark.git
+llm-optimizer==0.2.0
+transformers>=4.40.0
+huggingface-hub>=0.23.0
+torch>=2.0.0
+
+# Optional: Production server
+gunicorn==23.0.0  # For production deployment
