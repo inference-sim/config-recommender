@@ -1,0 +1,1 @@
+Run the project's test suite using pytest with coverage reporting. Use `pytest --cov=config_recommender tests/` to execute all tests and generate a coverage report.
