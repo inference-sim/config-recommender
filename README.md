@@ -310,3 +310,6 @@ This project leverages and is inspired by:
 - [llm-d-benchmark](https://github.com/llm-d/llm-d-benchmark) - config_explorer library for accurate model memory calculations
 - Roofline analysis methodology: [JAX Scaling Book](https://jax-ml.github.io/scaling-book/roofline/)
 - "LLM Inference Unveiled: Survey and Roofline Model Insights" ([arXiv:2402.16363](https://arxiv.org/abs/2402.16363))
+
+
+UPDATING README
