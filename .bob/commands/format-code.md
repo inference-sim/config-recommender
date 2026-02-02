@@ -1,0 +1,1 @@
+Format the codebase using Black and isort. Run `black config_recommender/ tests/` and `isort config_recommender/ tests/` to ensure consistent code style with line-length 100 and Python 3.11+ target.

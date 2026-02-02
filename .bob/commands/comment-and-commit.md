@@ -1,0 +1,1 @@
+Review the generated code and use `git commit -S -s` to commit and sign the changes with a relevant and succinct commit message.
