@@ -266,6 +266,8 @@ class GPURecommender:
                 "fits": True,
                 "tokens_per_second": eval_data["performance"].tokens_per_second,
                 "intertoken_latency_ms": eval_data["performance"].intertoken_latency_ms,
+                "ttft_ms": eval_data["performance"].ttft_ms,
+                "e2e_latency_s": eval_data["performance"].e2e_latency_s,
                 "memory_required_gb": eval_data["performance"].memory_required_gb,
                 "memory_available_gb": eval_data["gpu"].memory_gb,
                 "cost_per_hour": eval_data["gpu"].cost_per_hour,

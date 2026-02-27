@@ -32,6 +32,12 @@ from .models import GPUSpec, ModelArchitecture
 # For TP=2: 5% overhead, TP=4: 15% overhead, TP=8: 35% overhead
 TP_OVERHEAD_PER_RANK = 0.05
 
+# Prefill speedup factor for fallback estimation
+# Prefill phase is typically faster than decode due to parallel processing of tokens
+# This is a conservative estimate used only when BentoML estimation is not available
+# Typical range: 1.5-3.0x faster than decode, depending on hardware and batch size
+PREFILL_SPEEDUP_FACTOR = 2.0
+
 
 @dataclass
 class PerformanceEstimate:
@@ -41,6 +47,8 @@ class PerformanceEstimate:
         tokens_per_second: Estimated throughput in tokens/second
         intertoken_latency_ms: Estimated inter-token latency in ms
             (time per token during generation)
+        ttft_ms: Time to first token in ms (prefill latency)
+        e2e_latency_s: End-to-end latency in seconds
         memory_required_gb: Total memory required in GB (per GPU)
         memory_weights_gb: Memory for model weights in GB (per GPU)
         memory_kv_cache_gb: Memory for KV cache in GB (per GPU)
@@ -51,6 +59,8 @@ class PerformanceEstimate:
 
     tokens_per_second: float
     intertoken_latency_ms: float
+    ttft_ms: float
+    e2e_latency_s: float
     memory_required_gb: float
     memory_weights_gb: float
     memory_kv_cache_gb: float
@@ -280,8 +290,11 @@ class SyntheticBenchmarkEstimator:
             )
             
             # Extract results from BentoML's PerformanceResult
+            # Use exactly what BentoML provides: Throughput, TTFT, ITL, and E2E latency
             tokens_per_second = bento_result.output_throughput_tps
             intertoken_latency_ms = bento_result.itl_ms
+            ttft_ms = bento_result.ttft_ms
+            e2e_latency_s = bento_result.e2e_latency_s
             
             # Calculate memory breakdown for compatibility and accuracy
             # We use our own memory calculation because it accounts for the specific sequence_length
@@ -341,10 +354,31 @@ class SyntheticBenchmarkEstimator:
             intertoken_latency_ms = (
                 (1000.0 / tokens_per_second) if tokens_per_second > 0 else float("inf")
             )
+            
+            # For fallback calculation, estimate TTFT and E2E latency
+            # NOTE: This is a simplified estimation used only for GPUs not supported by BentoML
+            # Real-world prefill behavior is more complex and depends on:
+            # - Hardware parallelism (tensor cores, memory bandwidth)
+            # - Batch size and sequence length
+            # - Attention mechanism implementation
+            # These estimates should be treated as rough approximations
+            if tokens_per_second > 0:
+                # TTFT is the prefill time for input_length tokens
+                # Prefill is faster due to parallel token processing vs sequential decode
+                ttft_ms = (self.input_length / (tokens_per_second * PREFILL_SPEEDUP_FACTOR)) * 1000.0
+                # E2E latency = prefill time + decode time for all output tokens
+                decode_time_s = self.output_length / tokens_per_second
+                e2e_latency_s = (ttft_ms / 1000.0) + decode_time_s
+            else:
+                ttft_ms = float("inf")
+                e2e_latency_s = float("inf")
+                e2e_latency_s = float("inf")
 
         return PerformanceEstimate(
             tokens_per_second=tokens_per_second,
             intertoken_latency_ms=intertoken_latency_ms,
+            ttft_ms=ttft_ms,
+            e2e_latency_s=e2e_latency_s,
             memory_required_gb=memory_required_gb,
             memory_weights_gb=weights_per_gpu,
             memory_kv_cache_gb=kv_cache_per_gpu,
