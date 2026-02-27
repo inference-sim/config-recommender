@@ -20,8 +20,11 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
 ]
 requires-python = ">=3.11"
+# Note: dependencies are managed via setup.py for dynamic submodule detection
+# When used as a submodule in llm-d-benchmark, config_explorer is installed locally
+# When used standalone, config_explorer is installed from git
+# See setup.py for implementation details
 dependencies = [
-    "config_explorer @ git+https://github.com/llm-d/llm-d-benchmark.git#subdirectory=config_explorer",
     "llm-optimizer @ git+https://github.com/bentoml/llm-optimizer.git",
     "streamlit>=1.28.0",
     "pandas>=2.0.0",

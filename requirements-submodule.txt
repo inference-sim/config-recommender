@@ -1,0 +1,6 @@
+# Requirements for config-recommender when used as a submodule in llm-d-benchmark
+# The parent repository should install config_explorer separately
+
+llm-optimizer @ git+https://github.com/bentoml/llm-optimizer.git
+streamlit>=1.28.0
+pandas>=2.0.0
